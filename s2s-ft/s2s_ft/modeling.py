@@ -86,6 +86,12 @@ class BertPreTrainedForSeq2SeqModel(BertPreTrainedModel):
                     kwargs["state_dict"] = state_dict
                 elif os.path.isfile(pretrained_model_name_or_path):
                     kwargs["state_dict"] = torch.load(pretrained_model_name_or_path, map_location='cpu')
+                elif os.path.isdir(pretrained_model_name_or_path):  # added by yumo
+                    model_fn = [fn for fn in os.listdir(pretrained_model_name_or_path) if fn.endswith('.bin')]
+                    assert len(model_fn) <= 1, f'More than 1 bin file under {pretrained_model_name_or_path}'
+                    kwargs["state_dict"] = torch.load(
+                        os.path.join(pretrained_model_name_or_path, model_fn[0]), 
+                        map_location='cpu')
 
         if kwargs["state_dict"] is None:
             logger.info("s2s-ft does't support the model !")
