@@ -11,10 +11,10 @@ import torch.nn.functional as F
 
 from transformers.modeling_bert import \
     BertPreTrainedModel, BertSelfOutput, BertIntermediate, BertOutput, BertPredictionHeadTransform
-from transformers.modeling_roberta import ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP
-from transformers.modeling_bert import BERT_PRETRAINED_MODEL_ARCHIVE_MAP
-from transformers.modeling_distilbert import DISTILBERT_PRETRAINED_MODEL_ARCHIVE_MAP
-from transformers.modeling_xlm_roberta import XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP
+# from transformers.modeling_roberta import ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP
+# from transformers.modeling_bert import BERT_PRETRAINED_MODEL_ARCHIVE_MAP
+# from transformers.modeling_distilbert import DISTILBERT_PRETRAINED_MODEL_ARCHIVE_MAP
+# from transformers.modeling_xlm_roberta import XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP
 
 from s2s_ft.config import BertForSeq2SeqConfig
 from s2s_ft.convert_state_dict import get_checkpoint_from_transformer_cache, state_dict_convert
@@ -41,17 +41,17 @@ class BertPreTrainedForSeq2SeqModel(BertPreTrainedModel):
     """
     config_class = BertForSeq2SeqConfig
     supported_convert_pretrained_model_archive_map = {
-        "bert": BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
-        "roberta": ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP,
-        "xlm-roberta": XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP, 
+        # "bert": BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
+        # "roberta": ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP,
+        # "xlm-roberta": XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP, 
         "unilm": UNILM_PRETRAINED_MODEL_ARCHIVE_MAP, 
         "minilm": MINILM_PRETRAINED_MODEL_ARCHIVE_MAP, 
     }
     base_model_prefix = "bert_for_seq2seq"
     pretrained_model_archive_map = {
-        **ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP,
-        **XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP, 
-        **BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
+        # **ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP,
+        # **XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP, 
+        # **BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
         **UNILM_PRETRAINED_MODEL_ARCHIVE_MAP,
         **MINILM_PRETRAINED_MODEL_ARCHIVE_MAP, 
     }
