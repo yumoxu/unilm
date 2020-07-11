@@ -404,10 +404,10 @@ def decode_all():
 
     # print(f'TORCH VERISON: {torch.version.cuda}')
     # print(f'CUDA HOME: {torch.utils.cpp_extension.CUDA_HOME}')
-    checkpoints = config.model_ckpt.split(',')
+    checkpoints = args.model_ckpt.split(',')
     for ckpt in checkpoints:
-        args.model_path = os.path.join(args.model_path, 'ckpt-{}'.format(ckpt))
-        config_file = args.config_path if args.config_path else os.path.join(args.model_path, "config.json")
+        model_path = os.path.join(args.model_path, 'ckpt-{}'.format(ckpt))
+        config_file = args.config_path if args.config_path else os.path.join(model_path, "config.json")
         logger.info("Read decoding config from: %s" % config_file)
         config = BertConfig.from_json_file(config_file)
 
@@ -429,9 +429,9 @@ def decode_all():
                 else:
                     w_list.append(w)
             forbid_ignore_set = set(tokenizer.convert_tokens_to_ids(w_list))
-        print(args.model_path)
+        print(model_path)
         found_checkpoint_flag = False
-        for model_recover_path in [args.model_path.strip()]:
+        for model_recover_path in [model_path.strip()]:
             logger.info("***** Recover model: %s *****", model_recover_path)
             found_checkpoint_flag = True
             model = BertForSeq2SeqDecoder.from_pretrained(
