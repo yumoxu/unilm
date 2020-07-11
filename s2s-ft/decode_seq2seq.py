@@ -161,6 +161,10 @@ def main():
     # tokenizer.max_len = args.max_seq_length
     tokenizer.model_max_length = args.max_seq_length
 
+    print(f'TORCH VERISON: {torch.version.cuda}')
+    print(f'CUDA HOME: {torch.utils.cpp_extension.CUDA_HOME}')
+
+
     config_file = args.config_path if args.config_path else os.path.join(args.model_path, "config.json")
     logger.info("Read decoding config from: %s" % config_file)
     config = BertConfig.from_json_file(config_file)
