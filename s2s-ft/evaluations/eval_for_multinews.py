@@ -22,6 +22,16 @@ import tempfile
 import shutil
 
 # pip install pyrouge
+from os.path import dirname, abspath, join, exists
+import sys
+sys_path = dirname(dirname(abspath(__file__)))
+if sys_path not in sys.path:
+    sys.path.insert(0, sys_path)
+
+parent_sys_path = dirname(sys_path)
+if parent_sys_path not in sys.path:
+    sys.path.insert(0, parent_sys_path)
+
 from evaluations.bs_pyrouge import Rouge155
 
 
