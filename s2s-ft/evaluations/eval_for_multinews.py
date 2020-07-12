@@ -274,6 +274,7 @@ def main():
 
     logger.info("***** Evaluation: %s *****", ','.join(eval_fn_list))
     num_pool = min(args.processes, len(eval_fn_list))
+    print(f'len(eval_fn_list): {len(eval_fn_list)}, num_pool: {num_pool}')
     p = Pool(num_pool)
     r_list = p.imap_unordered(process_eval, eval_fn_list)
     r_list = sorted([(fn, scores)
