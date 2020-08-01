@@ -2476,7 +2476,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
                 'attention_mask': attention_mask
-                'input_length': input_length,,
+                'input_length': input_length,
                 'task_idx': task_idx,
                 'mask_qkv': mask_qkv,
                 'forbid_word_mask': forbid_word_mask,
