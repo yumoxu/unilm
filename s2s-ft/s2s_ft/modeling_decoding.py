@@ -1731,8 +1731,8 @@ class BertForSeq2SeqDecoder(PreTrainedBertModel):
 
 
 class MargeDiscriminator(nn.Module):
-    def __init__(self, bert_model, pool_func, label, loss_idx, device='cuda', hidden_size=768, eps=1e-7):
-        super(MaRGE, self).__init__()
+    def __init__(self, bert_model, label, loss_idx, pool_func='ls', device='cuda', hidden_size=768, eps=1e-7):
+        super(MargeDiscriminator, self).__init__()
         self.bert_model = bert_model
         self.hidden_size = hidden_size
         self.pool_func = pool_func
