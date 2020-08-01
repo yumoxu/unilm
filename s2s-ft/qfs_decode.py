@@ -68,6 +68,8 @@ def add_generation_args(parser):
                         help="Model type selected in the list: " + ", ".join(TOKENIZER_CLASSES.keys()))
     parser.add_argument("--model_path", default=None, type=str, required=True,
                         help="Path to the model checkpoint.")
+    parser.add_argument("--model_ckpt", default=None, type=str, required=True,
+                        help="Path to the model checkpoint.")
     parser.add_argument("--config_path", default=None, type=str,
                         help="Path to config.json for the model.")
 
@@ -289,10 +291,10 @@ def set_tokenizer_and_model(args, discriminator):
             else:
                 w_list.append(w)
         forbid_ignore_set = set(tokenizer.convert_tokens_to_ids(w_list))
-    print(args.model_path)
-    # return tokenizer, config, bi_uni_pipeline, mask_word_id, eos_word_ids, sos_word_id, forbid_ignore_set
 
-    model_recover_path = args.model_path.strip()
+    model_path = os.path.join(args.model_path, 'ckpt-{}'.format(args.model_ckpt))
+    print(model_path)
+    model_recover_path = model_path.strip()
     logger.info("***** Recover model: %s *****", model_recover_path)
     model = BertForQueryFocusedDecoder.from_pretrained(
         model_recover_path, config=config, mask_word_id=mask_word_id, search_beam_size=args.beam_size,
