@@ -252,6 +252,9 @@ def main():
     else:
         eval_fn_list = [eval_fn for eval_fn in glob.glob(args.pred) if not(
             args.lazy_eval and Path(eval_fn+".rouge").exists())]
+        eval_fn_list = [eval_fn for eval_fn in glob.glob(args.pred) if not(
+            args.lazy_eval and Path(eval_fn+".rouge").exists())]
+        
     eval_fn_list = list(filter(lambda fn: not(fn.endswith(
         '.post') or fn.endswith('.rouge')), eval_fn_list))
 
