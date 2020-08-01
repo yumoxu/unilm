@@ -1969,6 +1969,22 @@ class BertModelIncrForQueryFocus(BertModel):
         return embedding_output, encoded_layers, pooled_output
 
 
+# Global vars for PP
+SMALL_CONST = 1e-15
+BIG_CONST = 1e10
+
+QUIET = 0
+REGULAR = 1
+VERBOSE = 2
+VERY_VERBOSE = 3
+VERBOSITY_LEVELS = {
+    'quiet': QUIET,
+    'regular': REGULAR,
+    'verbose': VERBOSE,
+    'very_verbose': VERY_VERBOSE,
+}
+
+
 class BertForQueryFocusedDecoder(PreTrainedBertModel):
     """refer to BertForPreTraining"""
 
