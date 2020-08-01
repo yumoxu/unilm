@@ -1954,7 +1954,7 @@ class BertModelIncrForQueryFocus(BertModel):
         extended_attention_mask = self.get_extended_attention_mask(input_shape, token_type_ids, attention_mask)
 
         embedding_output = self.embeddings(input_ids=input_ids, words_embeddings=input_embeds, 
-            token_type_ids=token_type_ids, position_ids=position_ids, task_idx=task_idx=task_idx)
+            token_type_ids=token_type_ids, position_ids=position_ids, task_idx=task_idx)
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
                                       output_all_encoded_layers=output_all_encoded_layers,
