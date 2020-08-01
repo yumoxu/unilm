@@ -2180,7 +2180,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 #     input_embeds=inputs_embeds
                 # )
                 curr_unpert_embedding, curr_unpert_layers = self.future_step(**step_base_params,
-                    next_pos=next_pos
+                    next_pos=next_pos,
                     input_embeds=inputs_embeds,
                     prev_embedding=curr_unpert_embedding, 
                     prev_encoded_layers=curr_unpert_layers
