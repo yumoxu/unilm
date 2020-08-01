@@ -20,10 +20,13 @@ from s2s_ft.modeling_decoding import BertForSeq2SeqDecoder, BertConfig
 from transformers.tokenization_bert import whitespace_tokenize
 import s2s_ft.s2s_loader as seq2seq_loader
 from s2s_ft.utils import load_and_cache_examples
-from transformers import \
-    BertTokenizer, RobertaTokenizer
+# from transformers import \
+#     BertTokenizer, RobertaTokenizer
 from s2s_ft.tokenization_unilm import UnilmTokenizer
 from s2s_ft.tokenization_minilm import MinilmTokenizer
+
+from s2s_ft.modeling_decoding import BertModel
+# from pytorch_transformers import (BertConfig, BertModel, BertTokenizer)
 
 TOKENIZER_CLASSES = {
     'bert': BertTokenizer,
@@ -240,7 +243,6 @@ def get_input(args):
 
 
 def load_discriminator(args):
-    from pytorch_transformers import (BertConfig, BertModel, BertTokenizer)
     bert_model_name = 'bert-base-uncased'
     bert_config = BertConfig.from_pretrained(bert_model_name, num_labels=1, finetuning_task='marge')
     bert_model = BertModel.from_pretrained(bert_model_name, from_tf=bool(False), config=bert_config)
