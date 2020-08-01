@@ -27,6 +27,7 @@ from s2s_ft.tokenization_minilm import MinilmTokenizer
 
 # from s2s_ft.modeling_decoding import BertModel
 import transformers
+from s2s_ft.modeling_decoding import MargeDiscriminator, BertForQueryFocusedDecoder
 # from pytorch_transformers import (BertConfig, BertModel, BertTokenizer)
 
 TOKENIZER_CLASSES = {
@@ -250,7 +251,9 @@ def load_discriminator(args):
     bert_model = transformers.BertModel.from_pretrained(bert_model_name, from_tf=bool(False), config=bert_config)
     tokenizer = BertTokenizer.from_pretrained(bert_model_name, do_lower_case=True, do_basic_tokenize=True, additional_special_tokens=['[SLOT]']) 
 
-    model = MargeDiscriminator(bert_model, pool_func='ls', label=args.disc_label, loss_idx=args.disc_loss_idx)
+    model = MargeDiscriminator(bert_model, pool_func='ls', 
+        label=args.disc_label, 
+        loss_idx=args.disc_loss_idx)
     # ckpt_dp = path_parser.model_save / f'marge_{marge_config.MARGE_CONFIG_ID}' / f'checkpoint-{marge_config.MARGE_CKPT}'
     checkpoint = torch.load(args.marge_ckpt_dp/'pytorch_model.bin')
     model.load_state_dict(checkpoint['model'])
