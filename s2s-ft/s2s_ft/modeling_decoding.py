@@ -2180,9 +2180,11 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 #     input_embeds=inputs_embeds
                 # )
                 curr_unpert_embedding, curr_unpert_layers = self.future_step(**step_base_params,
+                    next_pos=next_pos
                     input_embeds=inputs_embeds,
-                    prev_embedding=curr_unpert_embedding, prev_encoded_layers=curr_unpert_layers,
-                    next_pos=next_pos)
+                    prev_embedding=curr_unpert_embedding, 
+                    prev_encoded_layers=curr_unpert_layers
+                )
 
                 curr_hidden = curr_unpert_layers[-1]
                 new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
@@ -2278,11 +2280,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
 
-    def future_step(self, input_embeds, token_type_ids, position_ids, attention_mask, 
+    def future_step(self, next_pos, input_embeds, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
-            forbid_word_mask=None,
-            next_pos):
+            forbid_word_mask=None):
         """
             For future hidden states in plug and play.
         """
