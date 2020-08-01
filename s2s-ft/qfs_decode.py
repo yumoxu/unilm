@@ -25,7 +25,8 @@ from s2s_ft.utils import load_and_cache_examples
 from s2s_ft.tokenization_unilm import UnilmTokenizer
 from s2s_ft.tokenization_minilm import MinilmTokenizer
 
-from s2s_ft.modeling_decoding import BertModel
+# from s2s_ft.modeling_decoding import BertModel
+import transformer
 # from pytorch_transformers import (BertConfig, BertModel, BertTokenizer)
 
 TOKENIZER_CLASSES = {
@@ -245,8 +246,8 @@ def get_input(args):
 def load_discriminator(args):
     bert_model_name = 'bert-base-uncased'
     # bert_config = BertConfig.from_pretrained(bert_model_name, num_labels=1, finetuning_task='marge')
-    bert_config = BertConfig()
-    bert_model = BertModel.from_pretrained(bert_model_name, from_tf=bool(False), config=bert_config)
+    bert_config = transformer.BertConfig()
+    bert_model = transformer.BertModel.from_pretrained(bert_model_name, from_tf=bool(False), config=bert_config)
     tokenizer = BertTokenizer.from_pretrained(bert_model_name, do_lower_case=True, do_basic_tokenize=True, additional_special_tokens=['[SLOT]']) 
 
     model = MargeDiscriminator(bert_model, pool_func='ls', label=args.disc_label, loss_idx=args.disc_loss_idx)
