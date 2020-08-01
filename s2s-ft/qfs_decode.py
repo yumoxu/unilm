@@ -257,7 +257,7 @@ def load_discriminator(args):
         pool_func='ls'
     )
     # ckpt_dp = path_parser.model_save / f'marge_{marge_config.MARGE_CONFIG_ID}' / f'checkpoint-{marge_config.MARGE_CKPT}'
-    checkpoint = torch.load(args.marge_ckpt_dp/'pytorch_model.bin')
+    checkpoint = torch.load(os.path.join(args.marge_ckpt_dp, 'pytorch_model.bin'))
     model.load_state_dict(checkpoint['model'])
 
     # model = nn.DataParallel(model, device_ids=device_ids)
