@@ -2278,7 +2278,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
 
-    def future_step(self, , token_type_ids, position_ids, attention_mask, 
+    def future_step(self, input_embeds, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
             forbid_word_mask=None,
