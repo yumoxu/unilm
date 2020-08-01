@@ -2241,8 +2241,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 (p_.grad * window_mask / layer_grad_norms[index] ** gamma).data.cpu().numpy()
                 for index, p_ in enumerate(curr_layer_perturbation)
             ]
-            embedding_grad =  -stepsize *
-                (curr_embedding_perturbation.grad * window_mask / embedding_grad_norm ** gamma).data.cpu().numpy()
+
+            embedding_grad = -stepsize * (curr_embedding_perturbation.grad * window_mask / embedding_grad_norm ** gamma).data.cpu().numpy()
 
             # accumulate gradient
             layer_grad_accumulator = list(map(add, layer_grad, layer_grad_accumulator))
