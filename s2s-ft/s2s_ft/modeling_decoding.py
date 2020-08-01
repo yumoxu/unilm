@@ -1987,8 +1987,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                  window_length=0,
                  decay=False,
                  gamma=1.5,
-                 kl_scale=0.01,
-                 num_iterations=3):
+                 kl_scale=0.01):
         super(BertForQueryFocusedDecoder, self).__init__(config)
         self.bert = BertModelIncrForQueryFocus(config)
         self.cls = BertPreTrainingHeads(

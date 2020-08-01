@@ -304,7 +304,7 @@ def set_tokenizer_and_model(args, discriminator):
         device=device,
         verbosity_level=args.verbosity_level, stepsize=args.stepsize, temperature=args.temperature, top_k=args.top_k,
         num_iterations=args.num_iterations, grad_length=args.grad_length, horizon_length=args.horizon_length, 
-        window_length=args.window_length, decay=args.decay, gamma=args.gamma, kl_scale=args.kl_scale, num_iterations=args.num_iterations
+        window_length=args.window_length, decay=args.decay, gamma=args.gamma, kl_scale=args.kl_scale
     )
 
     if args.fp16:
