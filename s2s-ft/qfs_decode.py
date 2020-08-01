@@ -244,7 +244,8 @@ def get_input(args):
 
 def load_discriminator(args):
     bert_model_name = 'bert-base-uncased'
-    bert_config = BertConfig.from_pretrained(bert_model_name, num_labels=1, finetuning_task='marge')
+    # bert_config = BertConfig.from_pretrained(bert_model_name, num_labels=1, finetuning_task='marge')
+    bert_config = BertConfig()
     bert_model = BertModel.from_pretrained(bert_model_name, from_tf=bool(False), config=bert_config)
     tokenizer = BertTokenizer.from_pretrained(bert_model_name, do_lower_case=True, do_basic_tokenize=True, additional_special_tokens=['[SLOT]']) 
 
