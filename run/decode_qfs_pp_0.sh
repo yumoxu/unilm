@@ -6,7 +6,7 @@ export UNILM_CKPT=33000
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
 export MARGE_MODEL_NAME=marge-13
 export MARGE_CKPT=37500
-export MARGE_CKPT_PATH=${PROJ_ROOT}/model/${MODEL_NAME}/checkpoint-${MARGE_CKPT}
+export MARGE_CKPT_PATH=${QFS_PROJ_ROOT}/model/${MODEL_NAME}/checkpoint-${MARGE_CKPT}
 export INPUT_JSON=${QFS_PROJ_ROOT}/unilm_in/unilm_in-marge-13_config-37500_iter-narr-ir-dial-tf-2005.json
 
 export python=$PROJ_PATH/bin/python
