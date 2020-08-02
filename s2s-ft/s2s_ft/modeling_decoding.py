@@ -20,6 +20,10 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
 
+from operator import add
+from typing import List, Optional, Tuple, Union
+from torch.autograd import Variable
+from tqdm import trange
 from transformers.file_utils import cached_path
 
 from torch.nn.modules.loss import _Loss
