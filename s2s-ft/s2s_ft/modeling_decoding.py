@@ -2148,7 +2148,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         new_accumulated_hidden = None
         for i in range(self.num_iterations):
             if self.verbosity_level >= VERBOSE:
-                print("Iteration ", i + 1)
+                print(f'\tPerturb Iter {next_pos}.{i + 1}')
             # curr_perturbation = [
             #     self.to_var(torch.from_numpy(p_), requires_grad=True, device=device)
             #     for p_ in grad_accumulator
@@ -2605,6 +2605,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         while next_pos < output_length:
             # first_token = (next_pos == input_length)
+            print(f'POS {next_pos}: generate original token')
             step_params = {
                 # 'input_ids': input_ids,
                 'input_shape': input_shape,
@@ -2655,6 +2656,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'mask_ids': mask_ids,
                 'sos_ids': sos_ids,
             }
+            print(f'POS {next_pos}: perturb model')
             pert_layers, pert_embedding, _, layer_grad_norms, embedding_grad_norm, _ = self.perturb_past(**perturb_params)
 
             step_params['prev_embedding'] = pert_embedding
