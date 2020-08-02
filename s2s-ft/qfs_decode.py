@@ -233,7 +233,10 @@ def set_env(args):
     # return device, n_gpu
 
 
-def get_input(args, to_pred):
+def get_input(args, tokenizer):
+    max_src_length = args.max_seq_length - 2 - args.max_tgt_length
+    to_pred = load_and_cache_examples(args.input_file, tokenizer, local_rank=-1, cached_features_file=None, shuffle=False)
+
     input_lines = []
     for line in to_pred:
         input_lines.append(tokenizer.convert_ids_to_tokens(line["source_ids"])[:max_src_length])
@@ -341,16 +344,12 @@ def main():
     # tokenizer, config, bi_uni_pipeline, mask_word_id, eos_word_ids, sos_word_id, forbid_ignore_set = set_tokenizer(args)
     tokenizer, model, bi_uni_pipeline, model_recover_path = load_unilm(args, discriminator=discriminator)
 
-    next_i = 0
-    max_src_length = args.max_seq_length - 2 - args.max_tgt_length
-
-    to_pred = load_and_cache_examples(args.input_file, tokenizer, local_rank=-1, cached_features_file=None, shuffle=False)
-    input_lines = get_input(args, to_pred=to_pred)
-    
+    input_lines = get_input(args, tokenizer=tokenizer)
     output_lines = [""] * len(input_lines)
     score_trace_list = [None] * len(input_lines)
     total_batch = math.ceil(len(input_lines) / args.batch_size)
 
+    next_i = 0
     with tqdm(total=total_batch) as pbar:  
         batch_count = 0
         first_batch = True
