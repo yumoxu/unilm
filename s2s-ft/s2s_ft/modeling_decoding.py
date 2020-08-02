@@ -2064,6 +2064,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             curr_ids,
             next_pos,
             forbid_word_mask,
+            stepsize,
             unpert_embedding=None,
             unpert_layers=None,
             unpert_logits=None,
@@ -2495,11 +2496,14 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
             forbid_word_mask=None,
-            first_token=None, curr_ids=None, next_pos=None,
-            mask_ids=None, sos_ids=None):
+            # first_token=None, 
+            curr_ids=None, 
+            next_pos=None,
+            mask_ids=None, 
+            sos_ids=None):
         """
-            If first_token, curr_ids and next_pos will be initialized.
-            If not first_token, curr_ids and next_pos should be set.
+            # If first_token, curr_ids and next_pos will be initialized.
+            # If not first_token, curr_ids and next_pos should be set.
 
             input_length: the conditioned text length.
         """
@@ -2606,9 +2610,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
              # check if we are abowe grad max length
             if next_pos >= self.grad_length:
-                current_stepsize = stepsize * 0
+                current_stepsize = self.stepsize * 0
             else:
-                current_stepsize = stepsize
+                current_stepsize = self.stepsize
 
             accumulated_hidden = new_last_hidden[:, :-1, :]  # exclude the current position
             accumulated_hidden = torch.sum(accumulated_hidden, dim=1)  # sum of the current history
@@ -2621,7 +2625,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'task_idx': task_idx,
                 'mask_qkv': mask_qkv,
                 'forbid_word_mask': forbid_word_mask,
-                'first_token': first_token,
+                'stepsize': current_stepsize,
+                # 'first_token': first_token,
                 'curr_ids': curr_ids,
                 'next_pos': next_pos,
                 'unpert_embedding': new_embedding,
