@@ -2379,7 +2379,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         output_length = output_shape[1]
 
         if first_token:   # init curr_ids and next_pos
-            assert not (curr_ids or next_pos), 'curr_ids and next_pos should be initialized for the first step!'
+            assert curr_ids is None and next_pos is None, 'curr_ids and next_pos should be initialized for the first step!'
             curr_ids = input_ids
             next_pos = input_length
         else:
