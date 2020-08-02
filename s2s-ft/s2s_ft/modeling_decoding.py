@@ -1996,8 +1996,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                  search_beam_size=1, length_penalty=1.0, eos_id=0, sos_id=0,
                  forbid_duplicate_ngrams=False, forbid_ignore_set=None, ngram_size=3, min_len=0, mode="s2s", pos_shift=False,
                  discriminator=None,
-                 device='cuda',
-                 verbosity=REGULAR,
                  stepsize=0.01,
                  temperature=1.0,
                  top_k=10,
@@ -2007,7 +2005,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                  window_length=0,
                  decay=False,
                  gamma=1.5,
-                 kl_scale=0.01):
+                 kl_scale=0.01,
+                 verbosity=REGULAR,
+                 device='cuda',
+                 fp16=False):
         super(BertForQueryFocusedDecoder, self).__init__(config)
         self.bert = BertModelIncrForQueryFocus(config)
         self.cls = BertPreTrainingHeads(
@@ -2037,7 +2038,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         self.discriminator = discriminator
 
         # configs for pplm        
-        self.device = device
         self.verbosity_level = VERBOSITY_LEVELS.get(verbosity.lower(), REGULAR)
 
         self.stepsize = stepsize
@@ -2051,12 +2051,18 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         self.gamma = gamma
         self.kl_scale = kl_scale
 
+        self.device = device
+        self.fp16 = fp16
 
-    def to_var(self, x, requires_grad=False, volatile=False, device='cuda'):
-        if torch.cuda.is_available() and device == 'cuda':
+    def to_var(self, x, requires_grad=False, volatile=False):
+        if torch.cuda.is_available() and self.device == 'cuda':
             x = x.cuda()
-        elif device != 'cuda':
+        elif self.device != 'cuda':
             x = x.to(device)
+        
+        if self.fp16:
+            x = x.half()
+
         return Variable(x, requires_grad=requires_grad, volatile=volatile)
 
     def perturb_past(
@@ -2146,11 +2152,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             #     self.to_var(torch.from_numpy(p_), requires_grad=True, device=device)
             #     for p_ in grad_accumulator
             # ]  # grad -> a list of variables
-            curr_layer_perturbation = [
-                self.to_var(torch.from_numpy(p_), requires_grad=True, device=self.device)
+            curr_layer_perturbation = [self.to_var(torch.from_numpy(p_), requires_grad=True)
                 for p_ in layer_grad_accumulator]
-            curr_embedding_perturbation = self.to_var(torch.from_numpy(embedding_grad_accumulator), 
-                requires_grad=True, device=self.device)
+            curr_embedding_perturbation = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
 
             # Compute hidden using perturbed past
             # perturbed_past = list(map(add, past, curr_perturbation))
@@ -2298,12 +2302,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             unpert_embedding = unpert_embedding.detach()
 
         # apply the accumulated perturbations to the past
-        layer_grad_accumulator = [
-            self.to_var(torch.from_numpy(p_), requires_grad=True, device=self.device)
-            for p_ in layer_grad_accumulator
-        ]
+        layer_grad_accumulator = [self.to_var(torch.from_numpy(p_), requires_grad=True)
+            for p_ in layer_grad_accumulator]
         pert_layers = list(map(add, unpert_layers, layer_grad_accumulator))
-        embedding_grad_accumulator = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True, device=self.device)
+        embedding_grad_accumulator = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
         pert_embedding = unpert_embedding + embedding_grad_accumulator
 
         return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter

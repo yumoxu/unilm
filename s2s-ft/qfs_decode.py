@@ -317,10 +317,10 @@ def load_unilm(args, discriminator):
         ngram_size=args.ngram_size, min_len=args.min_len, mode=args.mode,
         max_position_embeddings=args.max_seq_length, pos_shift=args.pos_shift, 
         discriminator=discriminator,
-        device=args.device,
-        verbosity=args.verbosity, stepsize=args.stepsize, temperature=args.temperature, top_k=args.top_k,
+        stepsize=args.stepsize, temperature=args.temperature, top_k=args.top_k,
         num_iterations=args.num_iterations, grad_length=args.grad_length, horizon_length=args.horizon_length, 
-        window_length=args.window_length, decay=args.decay, gamma=args.gamma, kl_scale=args.kl_scale
+        window_length=args.window_length, decay=args.decay, gamma=args.gamma, kl_scale=args.kl_scale,
+        verbosity=args.verbosity, device=args.device, fp16=args.fp16
     )
 
     if args.fp16:
