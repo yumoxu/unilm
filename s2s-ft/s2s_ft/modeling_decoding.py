@@ -2089,11 +2089,11 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         if accumulated_hidden is None:
             accumulated_hidden = 0
 
-        if decay:
+        if self.decay:
             decay_mask = torch.arange(
                 0.,
                 1.0 + SMALL_CONST,
-                1.0 / (window_length)
+                1.0 / (self.window_length)
             )[1:]
         else:
             decay_mask = 1.0
@@ -2105,7 +2105,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         curr_length = embedding_grad_accumulator.shape[-2]
         print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
 
-        if curr_length > window_length and window_length > 0:
+        if curr_length > self.window_length and self.window_length > 0:
             # ones_key_val_shape = (
             #         tuple(past[0].shape[:-2])  # (2, d_batch, num_heads)
             #         + tuple([window_length])
@@ -2118,10 +2118,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             #         + tuple(past[0].shape[-1:])
             # )
             d_batch, _, d_hidden = unpert_embedding.size()
-            ones_key_val_shape = (d_batch, window_length, d_hidden)
-            zeros_key_val_shape = (d_batch, curr_length - window_length, d_hidden)
+            ones_key_val_shape = (d_batch, self.window_length, d_hidden)
+            zeros_key_val_shape = (d_batch, curr_length - self.window_length, d_hidden)
             
-
             ones_mask = torch.ones(ones_key_val_shape)
             # ones_mask = decay_mask * ones_mask.permute(0, 1, 2, 4, 3)
             ones_mask = decay_mask * ones_mask.permute(0, 2, 1)
@@ -2135,7 +2134,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # accumulate perturbations for num_iterations
         loss_per_iter = []
         new_accumulated_hidden = None
-        for i in range(num_iterations):
+        for i in range(self.num_iterations):
             if self.verbosity_level >= VERBOSE:
                 print("Iteration ", i + 1)
             # curr_perturbation = [
@@ -2144,7 +2143,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # ]  # grad -> a list of variables
             curr_layer_perturbation = [
                 self.to_var(torch.from_numpy(p_), requires_grad=True, device=self.device)
-                for p_ in grad_accumulator]
+                for p_ in layer_grad_accumulator]
             curr_embedding_perturbation = self.to_var(torch.from_numpy(embedding_grad_accumulator), 
                 requires_grad=True, device=self.device)
 
@@ -2195,7 +2194,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             curr_probs = torch.unsqueeze(probs, dim=1)  # d_batch * 1 * d_vocab, the perturbed prob at the current position
             # wte = self.model.resize_token_embeddings()
             wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
-            for _ in range(horizon_length):  # horizon_length is set to 1 so this loop only runs once
+            for _ in range(self.horizon_length):  # horizon_length is set to 1 so this loop only runs once
                 # as input, use the last expected embedding (intead of actual embedding of a token)
                 # inputs_embeds;: d_batch * 
                 inputs_embeds = torch.matmul(curr_probs, wte.weight.data)
@@ -2214,7 +2213,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
 
             # 1 is the perturbation for the present, horizon_length is for the future
-            cand_rep = new_accumulated_hidden / (curr_length + 1 + horizon_length)
+            cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
             discrim_loss, group_score, instc_score = self.discriminator(cand_rep)
             # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
             # discrim_loss = ce_loss(prediction, label)
