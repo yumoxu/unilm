@@ -2541,6 +2541,15 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
         curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
         curr_position_ids = position_ids[:, start_pos:next_pos + 1]
+
+        print(f'x_input_ids: {x_input_ids.size()}')
+        print(f'curr_token_type_ids: {curr_token_type_ids.size()}')
+        print(f'curr_position_ids: {curr_position_ids.size()}')
+        print(f'curr_attention_mask: {curr_attention_mask.size()}')
+        print(f'prev_embedding: {prev_embedding.size()}')
+        print(f'prev_encoded_layers: {prev_encoded_layers[0].size()} * {len(prev_encoded_layers)}')
+        print(f'mask_qkv: {mask_qkv.size()}')
+
         new_embedding, new_encoded_layers, _ = self.bert(
                 input_ids=x_input_ids, token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, 
                 attention_mask=curr_attention_mask,
