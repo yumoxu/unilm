@@ -26,7 +26,6 @@ from s2s_ft.tokenization_unilm import UnilmTokenizer
 from s2s_ft.tokenization_minilm import MinilmTokenizer
 
 # from s2s_ft.modeling_decoding import BertModel
-import transformers
 from s2s_ft.modeling_decoding import MargeDiscriminator, BertForQueryFocusedDecoder
 # from pytorch_transformers import (BertConfig, BertModel, BertTokenizer)
 
@@ -245,11 +244,12 @@ def get_input(args):
 
 
 def load_discriminator(args):
+    import pytorch_transformers
     bert_model_name = 'bert-base-uncased'
-    # bert_config = BertConfig.from_pretrained(bert_model_name, num_labels=1, finetuning_task='marge')
-    bert_config = transformers.BertConfig()
-    bert_model = transformers.BertModel.from_pretrained(bert_model_name, from_tf=bool(False), config=bert_config)
-    tokenizer = BertTokenizer.from_pretrained(bert_model_name, do_lower_case=True, do_basic_tokenize=True, additional_special_tokens=['[SLOT]']) 
+    bert_config = pytorch_transformers.BertConfig.from_pretrained(bert_model_name, num_labels=1, finetuning_task='marge')
+    # bert_config = transformers.BertConfig()
+    bert_model = pytorch_transformers.BertModel.from_pretrained(bert_model_name, from_tf=bool(False), config=bert_config)
+    tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(bert_model_name, do_lower_case=True, do_basic_tokenize=True, additional_special_tokens=['[SLOT]']) 
 
     model = MargeDiscriminator(bert_model, 
         label=args.disc_label, 
