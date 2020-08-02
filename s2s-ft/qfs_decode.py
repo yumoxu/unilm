@@ -315,7 +315,7 @@ def set_tokenizer_and_model(args, discriminator):
         max_position_embeddings=args.max_seq_length, pos_shift=args.pos_shift, 
         discriminator=discriminator,
         device=args.device,
-        verbosity_level=args.verbosity_level, stepsize=args.stepsize, temperature=args.temperature, top_k=args.top_k,
+        verbosity_level=args.verbosity, stepsize=args.stepsize, temperature=args.temperature, top_k=args.top_k,
         num_iterations=args.num_iterations, grad_length=args.grad_length, horizon_length=args.horizon_length, 
         window_length=args.window_length, decay=args.decay, gamma=args.gamma, kl_scale=args.kl_scale
     )
