@@ -278,7 +278,9 @@ def set_tokenizer_and_model(args, discriminator):
         vocab = tokenizer.vocab
 
     tokenizer.model_max_length = args.max_seq_length
-    config_file = args.config_path if args.config_path else os.path.join(args.model_path, "config.json")
+
+    model_path = os.path.join(args.model_path, 'ckpt-{}'.format(args.model_ckpt))
+    config_file = args.config_path if args.config_path else os.path.join(model_path, "config.json")
     logger.info("Read decoding config from: %s" % config_file)
     config = BertConfig.from_json_file(config_file)
 
@@ -300,9 +302,7 @@ def set_tokenizer_and_model(args, discriminator):
             else:
                 w_list.append(w)
         forbid_ignore_set = set(tokenizer.convert_tokens_to_ids(w_list))
-
-    model_path = os.path.join(args.model_path, 'ckpt-{}'.format(args.model_ckpt))
-    print(model_path)
+    
     model_recover_path = model_path.strip()
     logger.info("***** Recover model: %s *****", model_recover_path)
     model = BertForQueryFocusedDecoder.from_pretrained(
