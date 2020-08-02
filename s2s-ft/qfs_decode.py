@@ -227,8 +227,10 @@ def set_env(args):
         torch.manual_seed(random_seed)
         if n_gpu > 0:
             torch.cuda.manual_seed_all(args.seed)
-    
-    return device, n_gpu
+
+    args.device = device
+    args.n_gpu = n_gpu
+    # return device, n_gpu
 
 
 def get_input(args):
@@ -312,7 +314,7 @@ def set_tokenizer_and_model(args, discriminator):
         ngram_size=args.ngram_size, min_len=args.min_len, mode=args.mode,
         max_position_embeddings=args.max_seq_length, pos_shift=args.pos_shift, 
         discriminator=discriminator,
-        device=device,
+        device=args.device,
         verbosity_level=args.verbosity_level, stepsize=args.stepsize, temperature=args.temperature, top_k=args.top_k,
         num_iterations=args.num_iterations, grad_length=args.grad_length, horizon_length=args.horizon_length, 
         window_length=args.window_length, decay=args.decay, gamma=args.gamma, kl_scale=args.kl_scale
@@ -320,7 +322,7 @@ def set_tokenizer_and_model(args, discriminator):
 
     if args.fp16:
         model.half()
-    model.to(device)
+    model.to(args.device)
     if n_gpu > 1:
         model = torch.nn.DataParallel(model)
 
@@ -332,7 +334,8 @@ def set_tokenizer_and_model(args, discriminator):
 def main():
     parser = argparse.ArgumentParser()
     args = parse_args(parser)
-    device, n_gpu = set_env(args)
+    # device, n_gpu = set_env(args)
+    set_env(args)
     discriminator, _ = load_discriminator(args)
 
     # tokenizer, config, bi_uni_pipeline, mask_word_id, eos_word_ids, sos_word_id, forbid_ignore_set = set_tokenizer(args)
@@ -364,7 +367,7 @@ def main():
                     instances.append(proc(instance))
             with torch.no_grad():
                 batch = seq2seq_loader.batch_list_to_batch_tensors(instances)
-                batch = [t.to(device) if t is not None else None for t in batch]
+                batch = [t.to(args.device) if t is not None else None for t in batch]
                 input_ids, token_type_ids, position_ids, input_mask, mask_qkv, task_idx = batch
                 traces = model(input_ids, token_type_ids, position_ids, input_mask, task_idx=task_idx, mask_qkv=mask_qkv)
                 if args.beam_size > 1:
