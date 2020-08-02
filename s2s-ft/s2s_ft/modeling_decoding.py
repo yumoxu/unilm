@@ -2605,7 +2605,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             new_last_hidden = new_encoded_layers[-1]
 
              # check if we are abowe grad max length
-            if i >= grad_length:
+            if next_pos >= grad_length:
                 current_stepsize = stepsize * 0
             else:
                 current_stepsize = stepsize
@@ -2631,7 +2631,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'mask_ids': mask_ids,
                 'sos_ids': sos_ids,
             }
-            pert_layers, pert_embedding, _, layer_grad_norms, embedding_grad_norm, loss_this_iter = self.perturb_past(**perturb_params)
+            pert_layers, pert_embedding, _, layer_grad_norms, embedding_grad_norm, _ = self.perturb_past(**perturb_params)
 
             step_params['prev_embedding'] = pert_embedding
             step_params['prev_encoded_layers'] = pert_layers
