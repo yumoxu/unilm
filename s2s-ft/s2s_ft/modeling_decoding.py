@@ -2058,7 +2058,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         if torch.cuda.is_available() and self.device == 'cuda':
             x = x.cuda()
         elif self.device != 'cuda':
-            x = x.to(device)
+            x = x.to(self.device)
         
         if self.fp16:
             x = x.half()
