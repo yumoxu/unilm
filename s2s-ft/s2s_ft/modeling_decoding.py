@@ -2067,6 +2067,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
     def perturb_past(
             self,
+            input_shape,
             token_type_ids,
             position_ids,
             attention_mask,
@@ -2081,7 +2082,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             unpert_logits=None,
             accumulated_hidden=None,
             # first_token=None,
-            input_length=None,
+            # input_length=None,
             mask_ids=None,
             sos_ids=None
     ):
@@ -2169,7 +2170,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'attention_mask': attention_mask,
                 'task_idx': task_idx,
                 'mask_qkv': mask_qkv,
-                'curr_ids': curr_ids,
                 'next_pos': next_pos,
                 'forbid_word_mask': forbid_word_mask,
                 'mask_ids': mask_ids,
@@ -2177,11 +2177,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             }
             logits, new_embedding, new_encoded_layers = self.step(**step_base_params,
                 # input_ids=input_ids, 
-                input_length=input_length,
-                prev_embedding=pertubed_embedding, prev_encoded_layers=perturbed_layers,
+                input_shape=input_shape,
+                # input_length=input_length,
+                prev_embedding=pertubed_embedding, 
+                prev_encoded_layers=perturbed_layers,
                 # first_token=first_token, 
-                curr_ids=curr_ids, 
-                next_pos=next_pos)
+                curr_ids=curr_ids)
             # all_logits, _, all_hidden = model(last, past=perturbed_past)
 
             hidden = new_encoded_layers[-1]  # last hidden layer
@@ -2212,7 +2213,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 #     input_embeds=inputs_embeds
                 # )
                 curr_unpert_embedding, curr_unpert_layers = self.future_step(**step_base_params,
-                    next_pos=next_pos,
                     input_embeds=inputs_embeds,
                     prev_embedding=curr_unpert_embedding, 
                     prev_encoded_layers=curr_unpert_layers
@@ -2498,7 +2498,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         return new_embedding, new_encoded_layers
 
     def step(self, input_shape, token_type_ids, position_ids, attention_mask, 
-            input_length,
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
             forbid_word_mask=None,
@@ -2511,9 +2510,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # If first_token, curr_ids and next_pos will be initialized.
             # If not first_token, curr_ids and next_pos should be set.
 
-            input_length: the conditioned text length.
+            # input_length: the conditioned text length.
         """
         batch_size = input_shape[0]
+        input_length = input_shape[1]
         output_shape = list(token_type_ids.size())
         output_length = output_shape[1]
 
@@ -2599,7 +2599,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
                 'attention_mask': attention_mask,
-                'input_length': input_length,
+                # 'input_length': input_length,
                 'prev_embedding': prev_embedding,
                 'prev_encoded_layers': prev_encoded_layers,
                 'task_idx': task_idx,
@@ -2624,6 +2624,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             accumulated_hidden = torch.sum(accumulated_hidden, dim=1)  # sum of the current history
 
             perturb_params = {
+                'input_shape': input_shape,
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
                 'attention_mask': attention_mask,
