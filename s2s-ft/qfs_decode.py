@@ -269,7 +269,7 @@ def load_discriminator(args):
     return model, tokenizer
 
 
-def set_tokenizer_and_model(args, discriminator):
+def load_unilm(args, discriminator):
     tokenizer = TOKENIZER_CLASSES[args.model_type].from_pretrained(
         args.tokenizer_name, do_lower_case=args.do_lower_case, 
         cache_dir=args.cache_dir if args.cache_dir else None)
@@ -323,7 +323,7 @@ def set_tokenizer_and_model(args, discriminator):
     if args.fp16:
         model.half()
     model.to(args.device)
-    if n_gpu > 1:
+    if args.n_gpu > 1:
         model = torch.nn.DataParallel(model)
 
     torch.cuda.empty_cache()
@@ -339,7 +339,7 @@ def main():
     discriminator, _ = load_discriminator(args)
 
     # tokenizer, config, bi_uni_pipeline, mask_word_id, eos_word_ids, sos_word_id, forbid_ignore_set = set_tokenizer(args)
-    tokenizer, model, bi_uni_pipeline, model_recover_path = set_tokenizer_and_model(args, discriminator=discriminator)
+    tokenizer, model, bi_uni_pipeline, model_recover_path = load_unilm(args, discriminator=discriminator)
 
     next_i = 0
     max_src_length = args.max_seq_length - 2 - args.max_tgt_length
