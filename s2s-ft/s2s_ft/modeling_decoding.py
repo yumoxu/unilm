@@ -2162,7 +2162,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             pertubed_embedding = unpert_embedding + curr_embedding_perturbation
 
             # _, _, _, curr_length, _ = curr_perturbation[0].shape
-            curr_length = curr_embed_perturbation.shape[-2]
+            curr_length = curr_embedding_perturbation.shape[-2]
             step_base_params = {
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
