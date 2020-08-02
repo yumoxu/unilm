@@ -2605,7 +2605,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             new_last_hidden = new_encoded_layers[-1]
 
              # check if we are abowe grad max length
-            if next_pos >= grad_length:
+            if next_pos >= self.grad_length:
                 current_stepsize = stepsize * 0
             else:
                 current_stepsize = stepsize
