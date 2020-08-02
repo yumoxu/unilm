@@ -1993,7 +1993,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                  forbid_duplicate_ngrams=False, forbid_ignore_set=None, ngram_size=3, min_len=0, mode="s2s", pos_shift=False,
                  discriminator=None,
                  device='cuda',
-                 verbosity_level=REGULAR,
+                 verbosity=REGULAR,
                  stepsize=0.01,
                  temperature=1.0,
                  top_k=10,
@@ -2034,7 +2034,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         # configs for pplm        
         self.device = device
-        self.verbosity_level = verbosity_level
+        self.verbosity_level = VERBOSITY_LEVELS.get(verbosity.lower(), REGULAR)
+
         self.stepsize = stepsize
         self.temperature = temperature
         self.top_k = top_k
