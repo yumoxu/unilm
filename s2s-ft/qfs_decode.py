@@ -233,7 +233,7 @@ def set_env(args):
     # return device, n_gpu
 
 
-def get_input(args):
+def get_input(args, to_pred):
     input_lines = []
     for line in to_pred:
         input_lines.append(tokenizer.convert_ids_to_tokens(line["source_ids"])[:max_src_length])
@@ -345,7 +345,7 @@ def main():
     max_src_length = args.max_seq_length - 2 - args.max_tgt_length
 
     to_pred = load_and_cache_examples(args.input_file, tokenizer, local_rank=-1, cached_features_file=None, shuffle=False)
-    input_lines = get_input(args)
+    input_lines = get_input(args, to_pred=to_pred)
     
     output_lines = [""] * len(input_lines)
     score_trace_list = [None] * len(input_lines)
