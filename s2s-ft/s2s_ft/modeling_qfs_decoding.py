@@ -1358,8 +1358,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         ]
         embedding_grad_accumulator = np.zeros(unpert_embedding.shape).astype("float32")
 
-        if accumulated_hidden is None:
-            accumulated_hidden = 0
+        # if accumulated_hidden is None:
+            # accumulated_hidden = 0
+        accumulated_hidden = torch.sum(unpert_layers[-1], dim=1)  # sum of the current history
 
         if self.decay:
             decay_mask = torch.arange(0., 1.0 + SMALL_CONST, 1.0 / (self.window_length))[1:]
@@ -1443,8 +1444,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 )
             # all_logits, _, all_hidden = model(last, past=perturbed_past)
 
-            hidden = new_encoded_layers[-1]  # last hidden layer
-            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()  # TODO: double check this line
+            hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
+            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
             
             # TODO: Check the layer-norm consistency of this with trained discriminator (Sumanth)
             # logits = all_logits[:, -1, :]
@@ -1455,7 +1456,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # perturb again for the future
             # input: embeddings, not ids
-            ce_loss = torch.nn.CrossEntropyLoss()
+            # ce_loss = torch.nn.CrossEntropyLoss()
             # curr_unpert_past = unpert_past
             curr_unpert_embedding = unpert_embedding
             curr_unpert_layers = unpert_layers
@@ -1727,20 +1728,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         # loop starts
         # curr_length = list(curr_ids.size())[1]
-
         def _get_x_input_ids_and_start_pos():
             assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
-            #     x_input_ids = mask_ids
-            #     # start_pos = next_pos - curr_length
-            #     start_pos = next_pos - 1
-            # if self.pos_shift:
-            #     if next_pos == input_length:
-            #         x_input_ids = sos_ids
-            #         start_pos = 0
-            #     else:
-            #         x_input_ids = curr_ids
-            #         start_pos = next_pos
-            # else:  # w/o pos shift; generation starts from 0; add a mask
             """
                 start_pos: the start pos for the current input
             """
@@ -1805,34 +1794,28 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         """
             For future hidden states in plug and play.
         """
-        if not next_pos:
-            next_pos = input_length  # continueous pos after input
-        
-        curr_length = 1
-        
+        # if not next_pos:
+            # next_pos = input_length  # continueous pos after input
+
         def _get_x_input_embeds_and_start_pos():
             """
-                x_input_embeds: d_batch * 2 * d_hidden
-                
+                start_pos: the start pos for the current input
             """
-            if self.pos_shift:
-                if next_pos == input_length:
-                    sos_embeddings = self.bert.embeddings.word_embeddings(sos_ids)
-                    # x_input_embeds = torch.cat((curr_ids, sos_ids), dim=1)
-                    x_input_embeds = torch.cat((input_embeds, sos_embeddings), dim=1)
-                    start_pos = 0
-                else:
-                    # x_input_ids = curr_ids
-                    x_input_embeds = input_embeds
-                    start_pos = next_pos
-            else:  # w/o pos shift; generation starts from 0, and mask the token to generate 
-                start_pos = next_pos - curr_length
-                mask_embeddings = self.bert.embeddings.word_embeddings(mask_ids)
+            assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
+            mask_embeddings = self.bert.embeddings.word_embeddings(mask_ids)
+
+            if next_pos == input_length:
+                x_input_embeds = mask_embeddings
+                start_pos = next_pos 
+            else:
                 x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
-                # x_input_embeds = torch.cat((curr_ids, mask_ids), dim=1)
+                start_pos = next_pos - 1
+            
             return x_input_embeds, start_pos
         
         x_input_embeds, start_pos = _get_x_input_embeds_and_start_pos()
+        print(f'start_pos: {start_pos}, next_pos: {next_pos}')
+        
         curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
         curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
         curr_position_ids = position_ids[:, start_pos:next_pos + 1]
