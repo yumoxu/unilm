@@ -1483,7 +1483,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 perturbed_layers=perturbed_layers,
                 # first_token=first_token, 
                 curr_ids=curr_ids
-                )
+            )
             # all_logits, _, all_hidden = model(last, past=perturbed_past)
 
             hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
@@ -1581,7 +1581,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             #     ]
             for index, p_ in enumerate(curr_layer_perturbation):
                 print(f'Layer{index}: {p_.grad}')
-                
+
             if layer_grad_norms is not None and embedding_grad_norm is not None:
                 layer_grad_norms = [
                     torch.max(layer_grad_norms[index], torch.norm(p_.grad * window_mask))
