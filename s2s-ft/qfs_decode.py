@@ -329,6 +329,7 @@ def load_unilm(args, discriminator):
 
 
 def main():
+    torch.autograd.set_detect_anomaly(True)
     parser = argparse.ArgumentParser()
     args = parse_args(parser)
     # device, n_gpu = set_env(args)
