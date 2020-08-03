@@ -1523,7 +1523,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             loss_list.append(discrim_loss)
 
             kl_loss = 0.0
-            if kl_scale > 0.0:
+            if self.kl_scale > 0.0:
                 unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
                 unpert_probs = (
                         unpert_probs + SMALL_CONST *
@@ -1532,7 +1532,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(
                     self.device).detach()
                 corrected_probs = probs + correction.detach()
-                kl_loss = kl_scale * (
+                kl_loss = self.kl_scale * (
                     (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
                 )
                 if self.verbosity_level >= VERY_VERBOSE:
