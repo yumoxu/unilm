@@ -262,7 +262,7 @@ def load_discriminator(args):
     # model = nn.DataParallel(model, device_ids=device_ids)
     # print('[load_discriminator] Parallel Data to devices: {}'.format(device_ids))
     model.cuda()
-    model.eval()
+    # model.eval()
     return model, tokenizer
 
 
@@ -324,7 +324,7 @@ def load_unilm(args, discriminator):
         model = torch.nn.DataParallel(model)
 
     torch.cuda.empty_cache()
-    model.eval()
+    # model.eval()
     return tokenizer, model, bi_uni_pipeline, model_recover_path
 
 
