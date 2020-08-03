@@ -1259,7 +1259,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
     def __init__(self, config, mask_word_id=0, num_labels=2, num_rel=0,
                  search_beam_size=1, length_penalty=1.0, eos_id=0, sos_id=0,
                  forbid_duplicate_ngrams=False, forbid_ignore_set=None, ngram_size=3, min_len=0, mode="s2s", pos_shift=False,
-                 discriminator=None,
                  stepsize=0.01,
                  temperature=1.0,
                  top_k=10,
@@ -1298,9 +1297,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         self.mode = mode
         self.pos_shift = pos_shift
 
-        # load discriminator
-        self.discriminator = discriminator
-
         # configs for pplm        
         self.verbosity_level = VERBOSITY_LEVELS.get(verbosity.lower(), REGULAR)
 
@@ -1331,6 +1327,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
     def perturb_past(
             self,
+            discriminator,
             input_shape,
             token_type_ids,
             position_ids,
@@ -1525,7 +1522,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # 1 is the perturbation for the present, horizon_length is for the future
             cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
-            discrim_loss, group_score, instc_score = self.discriminator(cand_rep)
+            discrim_loss, group_score, instc_score = discriminator(cand_rep)
             # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
             # discrim_loss = ce_loss(prediction, label)
             if self.verbosity_level >= VERY_VERBOSE:
@@ -1778,7 +1775,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return log_scores, new_embedding, new_encoded_layers
 
-    def step_for_current_perturb(self, input_shape, token_type_ids, position_ids, attention_mask, 
+    def step_for_current_perturb(self, 
+            discriminator,
+            input_shape, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             perturbed_embedding=None, 
             perturbed_layers=None, 
@@ -1976,7 +1975,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return log_scores, new_embedding, new_encoded_layers
     
-    def forward(self, input_ids, token_type_ids, position_ids, attention_mask, task_idx=None, mask_qkv=None):
+    def forward(self, input_ids, token_type_ids, position_ids, attention_mask, task_idx=None, mask_qkv=None, discriminator=None):
         assert self.search_beam_size > 1
         input_shape = list(input_ids.size())
         batch_size = input_shape[0]
@@ -2043,6 +2042,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             accumulated_hidden = torch.sum(accumulated_hidden, dim=1)  # sum of the current history
 
             perturb_params = {
+                'discriminator': discriminator,
                 'input_shape': input_shape,
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
@@ -2076,7 +2076,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
 
             # for unpert discrim_loss
-            unpert_discrim_loss, _, _ = self.discriminator(torch.mean(new_last_hidden, dim=1))
+            unpert_discrim_loss, _, _ = discriminator(torch.mean(new_last_hidden, dim=1))
             # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
             # discrim_loss = ce_loss(prediction, label)
             if self.verbosity_level >= VERY_VERBOSE:

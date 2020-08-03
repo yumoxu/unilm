@@ -266,7 +266,7 @@ def load_discriminator(args):
     return model, tokenizer
 
 
-def load_unilm(args, discriminator):
+def load_unilm(args):
     tokenizer = TOKENIZER_CLASSES[args.model_type].from_pretrained(
         args.tokenizer_name, do_lower_case=args.do_lower_case, 
         cache_dir=args.cache_dir if args.cache_dir else None)
@@ -310,7 +310,6 @@ def load_unilm(args, discriminator):
         forbid_duplicate_ngrams=args.forbid_duplicate_ngrams, forbid_ignore_set=forbid_ignore_set,
         ngram_size=args.ngram_size, min_len=args.min_len, mode=args.mode,
         max_position_embeddings=args.max_seq_length, pos_shift=args.pos_shift, 
-        discriminator=discriminator,
         stepsize=args.stepsize, temperature=args.temperature, top_k=args.top_k,
         num_iterations=args.num_iterations, grad_length=args.grad_length, horizon_length=args.horizon_length, 
         window_length=args.window_length, decay=args.decay, gamma=args.gamma, kl_scale=args.kl_scale,
@@ -340,7 +339,7 @@ def main():
     discriminator, _ = load_discriminator(args)
 
     # tokenizer, config, bi_uni_pipeline, mask_word_id, eos_word_ids, sos_word_id, forbid_ignore_set = set_tokenizer(args)
-    tokenizer, model, bi_uni_pipeline, model_recover_path = load_unilm(args, discriminator=discriminator)
+    tokenizer, model, bi_uni_pipeline, model_recover_path = load_unilm(args)
 
     input_lines = get_input(args, tokenizer=tokenizer)
     output_lines = [""] * len(input_lines)
@@ -366,7 +365,7 @@ def main():
             batch = seq2seq_loader.batch_list_to_batch_tensors(instances)
             batch = [t.to(args.device) if t is not None else None for t in batch]
             input_ids, token_type_ids, position_ids, input_mask, mask_qkv, task_idx = batch
-            traces = model(input_ids, token_type_ids, position_ids, input_mask, task_idx=task_idx, mask_qkv=mask_qkv)
+            traces = model(input_ids, token_type_ids, position_ids, input_mask, task_idx=task_idx, mask_qkv=mask_qkv, discriminator=discriminator)
             if args.beam_size > 1:
                 traces = {k: v.tolist() for k, v in traces.items()}
                 output_ids = traces['pred_seq']
