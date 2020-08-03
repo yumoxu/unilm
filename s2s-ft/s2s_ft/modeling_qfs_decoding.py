@@ -1750,6 +1750,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             return x_input_ids, start_pos
         
         x_input_ids, start_pos = _get_x_input_ids_and_start_pos()
+        print(f'start_pos: {start_pos}, next_pos: {next_pos}, curr_length: {curr_length}')
         
         # prepare input
         # TODO: fix the following inputs to BERT
