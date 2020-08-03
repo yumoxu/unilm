@@ -1547,6 +1547,11 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(self.device).detach()
 
                 corrected_probs = probs + correction.detach()
+                
+                print(f'probs: {probs}')
+                print(f'unpert_probs: {unpert_probs}')
+                print(f'corrected_probs: {corrected_probs}')
+                
                 kl_loss = self.kl_scale * (
                     (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
                 )
