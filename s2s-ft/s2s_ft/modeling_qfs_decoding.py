@@ -1538,7 +1538,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                         (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
                     )
                     correction = SMALL_CONST * (probs <= SMALL_CONST).half().to(self.device).detach()
-
                 else:
                     unpert_probs = (unpert_probs + SMALL_CONST *
                         (unpert_probs <= SMALL_CONST).float().to(self.device).detach()
@@ -1558,6 +1557,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(' pplm_loss', (loss - kl_loss).data.cpu().numpy())
 
             # compute gradients
+            loss = Variable(loss, requires_grad = True)
             loss.backward()
 
             # calculate gradient norms
