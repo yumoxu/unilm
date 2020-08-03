@@ -1776,7 +1776,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         return log_scores, new_embedding, new_encoded_layers
 
     def step_for_current_perturb(self, 
-            discriminator,
             input_shape, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             perturbed_embedding=None, 
