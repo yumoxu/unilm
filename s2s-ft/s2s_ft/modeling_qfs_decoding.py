@@ -1334,7 +1334,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         """
         # Generate inital perturbed past
         # each layer gets a grad_accumulator with the shape of (2, d_batch, num_heads, seq_len, embed_size_per_head)
-        def build_unperturbed_reps():
+        def build_unpert_past():
             assert not self.pos_shift
             if prev_embedding is None:  # is the first, new_embedding is context + MASK; perturb the context
                 unpert_embedding = new_embedding[:, :-1, :]
@@ -1343,13 +1343,13 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 unpert_embedding = prev_embedding
             
             if prev_encoded_layers is None:
-                unpert_layers = [x[:, :-1, :]) for x in new_encoded_layers]
+                unpert_layers = [x[:, :-1, :] for x in new_encoded_layers]
             else:
                 # unpert_layers = [torch.cat((x[0], x[1][:, :-1, :]), dim=1)
                 #     for x in zip(prev_encoded_layers, new_encoded_layers)]
                 unpert_layers = prev_encoded_layers
 
-        unpert_embedding, unpert_layers = build_unperturbed_reps()
+        unpert_embedding, unpert_layers = build_unpert_past()
 
         layer_grad_accumulator = [
             (np.zeros(p.shape).astype("float32"))
@@ -1431,7 +1431,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'sos_ids': sos_ids,
             }
 
-            logits, new_embedding, new_encoded_layers = self.perturb_step(**step_base_params,
+            logits, new_embedding, new_encoded_layers = self.step_for_current_perturb(**step_base_params,
                 # input_ids=input_ids, 
                 input_shape=input_shape,
                 # input_length=input_length,
@@ -1469,7 +1469,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 #     past=curr_unpert_past,
                 #     input_embeds=inputs_embeds
                 # )
-                curr_unpert_embedding, curr_unpert_layers = self.future_step(**step_base_params,
+                curr_unpert_embedding, curr_unpert_layers = self.step_for_future_perturb(**step_base_params,
                     input_embeds=inputs_embeds,
                     prev_embedding=curr_unpert_embedding, 
                     prev_encoded_layers=curr_unpert_layers
@@ -1704,7 +1704,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return log_scores, new_embedding, new_encoded_layers
 
-    def perturb_step(self, input_shape, token_type_ids, position_ids, attention_mask, 
+    def step_for_current_perturb(self, input_shape, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             perturbed_embedding=None, 
             perturbed_layers=None, 
@@ -1789,7 +1789,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return log_scores, new_embedding, new_encoded_layers
     
-    def future_step(self, next_pos, input_embeds, token_type_ids, position_ids, attention_mask, 
+    def step_for_future_perturb(self, next_pos, input_embeds, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
             forbid_word_mask=None,
