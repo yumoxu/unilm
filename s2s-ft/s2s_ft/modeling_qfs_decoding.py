@@ -1579,6 +1579,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             #         (torch.norm(p_.grad * window_mask) + SMALL_CONST)
             #         for index, p_ in enumerate(curr_perturbation)
             #     ]
+            for index, p_ in enumerate(curr_layer_perturbation):
+                print(f'Layer{index}: {p_.grad}')
+                
             if layer_grad_norms is not None and embedding_grad_norm is not None:
                 layer_grad_norms = [
                     torch.max(layer_grad_norms[index], torch.norm(p_.grad * window_mask))
@@ -1593,9 +1596,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 embedding_grad_norm = (torch.norm(curr_embedding_perturbation.grad * window_mask) + SMALL_CONST)
 
             # normalize gradients
-            for index, p_ in enumerate(curr_layer_perturbation):
-                print(f'Layer{index}: {p_.grad}')
-
             layer_grad = [
                 -stepsize *
                 (p_.grad * window_mask / layer_grad_norms[index] ** gamma).data.cpu().numpy()
