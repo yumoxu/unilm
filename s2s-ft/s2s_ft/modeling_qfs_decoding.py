@@ -984,7 +984,7 @@ class MargeDiscriminator(nn.Module):
         instc_score = instc_score * instc_mask.float()
         return instc_score
     
-    def _pool(self, instc_score, instc_mask):
+    def _pool(self, instc_score, instc_mask=None):
         """
 
         :param instc_score: d_batch * max_ns
@@ -1006,6 +1006,7 @@ class MargeDiscriminator(nn.Module):
             nom = torch.sum(instc_score ** 2, dim=-1, keepdim=True)
             denom = torch.sum(instc_score, dim=-1, keepdim=True) + self.eps
             return nom / denom
+
         else:
             raise ValueError(f'Invalid pool_func: {self.pool_func}')
 
@@ -1055,7 +1056,7 @@ class MargeDiscriminator(nn.Module):
         slot_rep = self.get_rand_slot_rep(d_batch=cand_rep.size(0), max_n_slot=8)
         instc_score = self._match(cand_rep, slot_rep, instc_mask=slot_mask)
 
-        group_score = self._pool(instc_score, instc_mask=slot_mask)  # d_batch * 1
+        group_score = self._pool(instc_score, instc_mask=None)  # d_batch * 1
         group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
         print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
 
