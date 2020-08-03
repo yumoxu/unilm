@@ -1237,7 +1237,8 @@ class BertModelIncrForQueryFocus(BertModel):
 
 
 # Global vars for PP
-SMALL_CONST = 1e-15
+# SMALL_CONST = 1e-15
+SMALL_CONST = 1e-7
 BIG_CONST = 1e10
 
 QUIET = 0
@@ -1551,7 +1552,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(f'probs: {probs}')
                 print(f'unpert_probs: {unpert_probs}')
                 print(f'corrected_probs: {corrected_probs}')
-                
+
                 kl_loss = self.kl_scale * (
                     (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
                 )
