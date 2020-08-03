@@ -1054,9 +1054,14 @@ class MargeDiscriminator(nn.Module):
     
     def forward(self, cand_rep):
         slot_rep = self.get_rand_slot_rep(d_batch=cand_rep.size(0), max_n_slot=8)
-        instc_score = self._match(cand_rep, slot_rep, instc_mask=slot_mask)
+        d_embed = cand_rep.size()[-1]
+        cand_rep = torch.unsqueeze(cand_rep, dim=-1)  # d_batch * d_embed * 1
+        instc_score_in = torch.matmul(slot_rep, cand_rep)  # d_batch * max_ns * 1
+        instc_score_in = torch.squeeze(instc_score_in, dim=-1) / np.sqrt(self.hidden_size)  # d_batch * max_ns
+        instc_score = torch.sigmoid(instc_score_in)
 
-        group_score = self._pool(instc_score, instc_mask=None)  # d_batch * 1
+        # instc_score = self._match(cand_rep, slot_rep, instc_mask=slot_mask)
+        group_score = self._pool(instc_score)  # d_batch * 1
         group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
         print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
 
