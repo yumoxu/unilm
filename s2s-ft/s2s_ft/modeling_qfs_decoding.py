@@ -1474,7 +1474,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 curr_unpert_embedding, curr_unpert_layers = self.step_for_future_perturb(**step_base_params,
                     input_embeds=inputs_embeds,
                     prev_embedding=curr_unpert_embedding, 
-                    prev_encoded_layers=curr_unpert_layers
+                    prev_encoded_layers=curr_unpert_layers,
+                    input_shape=input_shape
                 )
 
                 curr_hidden = curr_unpert_layers[-1]
@@ -1785,7 +1786,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return log_scores, new_embedding, new_encoded_layers
     
-    def step_for_future_perturb(self, next_pos, input_embeds, token_type_ids, position_ids, attention_mask, 
+    def step_for_future_perturb(self, input_shape, next_pos, input_embeds, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
             forbid_word_mask=None,
@@ -1794,8 +1795,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         """
             For future hidden states in plug and play.
         """
-        # if not next_pos:
-            # next_pos = input_length  # continueous pos after input
+        input_length = input_shape[1]
 
         def _get_x_input_embeds_and_start_pos():
             """
@@ -1812,7 +1812,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 start_pos = next_pos - 1
             
             return x_input_embeds, start_pos
-        
+          
         x_input_embeds, start_pos = _get_x_input_embeds_and_start_pos()
         print(f'start_pos: {start_pos}, next_pos: {next_pos}')
         
