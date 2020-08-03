@@ -1348,6 +1348,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # unpert_layers = [torch.cat((x[0], x[1][:, :-1, :]), dim=1)
                 #     for x in zip(prev_encoded_layers, new_encoded_layers)]
                 unpert_layers = prev_encoded_layers
+            return unpert_embedding, unpert_layers
 
         unpert_embedding, unpert_layers = build_unpert_past()
 
