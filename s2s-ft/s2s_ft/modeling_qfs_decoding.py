@@ -1348,6 +1348,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             new_encoded_layers=None,
             unpert_logits=None,
             accumulated_hidden=None,
+            layer_grad_norms=None,
+            embedding_grad_norm=None,
             # first_token=None,
             # input_length=None,
             mask_ids=None,
@@ -1571,8 +1573,18 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             #         (torch.norm(p_.grad * window_mask) + SMALL_CONST)
             #         for index, p_ in enumerate(curr_perturbation)
             #     ]
-            layer_grad_norms = [(torch.norm(p_.grad * window_mask) + SMALL_CONST) for p_ in curr_layer_perturbation]
-            embedding_grad_norm = torch.norm(curr_embedding_perturbation.grad * window_mask) + SMALL_CONST
+            if layer_grad_norms is not None and embedding_grad_norm is not None:
+                layer_grad_norms = [
+                    torch.max(layer_grad_norms[index], torch.norm(p_.grad * window_mask))
+                    for index, p_ in enumerate(curr_layer_perturbation)
+                ]
+                embedding_grad_norm = torch.max(embedding_grad_norm, torch.norm(curr_embedding_perturbation.grad * window_mask))
+            else:
+                layer_grad_norms = [
+                    (torch.norm(p_.grad * window_mask) + SMALL_CONST)
+                    for index, p_ in enumerate(curr_layer_perturbation)
+                ]
+                embedding_grad_norm = (torch.norm(curr_embedding_perturbation.grad * window_mask) + SMALL_CONST)
 
             # normalize gradients
             layer_grad = [
@@ -1580,7 +1592,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 (p_.grad * window_mask / layer_grad_norms[index] ** gamma).data.cpu().numpy()
                 for index, p_ in enumerate(curr_layer_perturbation)
             ]
-
             embedding_grad = -stepsize * (curr_embedding_perturbation.grad * window_mask / embedding_grad_norm ** gamma).data.cpu().numpy()
 
             # accumulate gradient
@@ -1980,6 +1991,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         forbid_word_mask = None
         buf_matrix = None
 
+        layer_grad_norms = None
+        embedding_grad_norm = None
+
         while next_pos < output_length:
             # first_token = (next_pos == input_length)
             print(f'POS {next_pos}: generate original token')
@@ -2032,6 +2046,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'new_encoded_layers': new_encoded_layers,
                 'unpert_logits': logits,
                 'accumulated_hidden': accumulated_hidden,
+                'layer_grad_norms': layer_grad_norms,
+                'embedding_grad_norm': embedding_grad_norm,
                 'mask_ids': mask_ids,
                 'sos_ids': sos_ids,
             }
