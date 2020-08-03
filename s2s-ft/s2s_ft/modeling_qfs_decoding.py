@@ -1033,7 +1033,6 @@ class MargeDiscriminator(nn.Module):
             For debug.
         """
         slot_rep = torch.rand(size=(d_batch, max_n_slot, 768), device=self.device, dtype=torch.float32)
-        slot_rep = slot_rep * slot_mask[:, :, None].float()
         return slot_rep
     
     def _forward(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask, cand_rep):
