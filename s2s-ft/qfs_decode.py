@@ -362,36 +362,36 @@ def main():
             for instance in [(x, max_a_len) for x in buf]:
                 for proc in bi_uni_pipeline:   # can ignore this loop; there is only one Preprocess4Seq2seqDecoder in the pipeline
                     instances.append(proc(instance))
-            with torch.no_grad():
-                batch = seq2seq_loader.batch_list_to_batch_tensors(instances)
-                batch = [t.to(args.device) if t is not None else None for t in batch]
-                input_ids, token_type_ids, position_ids, input_mask, mask_qkv, task_idx = batch
-                traces = model(input_ids, token_type_ids, position_ids, input_mask, task_idx=task_idx, mask_qkv=mask_qkv)
-                if args.beam_size > 1:
-                    traces = {k: v.tolist() for k, v in traces.items()}
-                    output_ids = traces['pred_seq']
+            # with torch.no_grad():
+            batch = seq2seq_loader.batch_list_to_batch_tensors(instances)
+            batch = [t.to(args.device) if t is not None else None for t in batch]
+            input_ids, token_type_ids, position_ids, input_mask, mask_qkv, task_idx = batch
+            traces = model(input_ids, token_type_ids, position_ids, input_mask, task_idx=task_idx, mask_qkv=mask_qkv)
+            if args.beam_size > 1:
+                traces = {k: v.tolist() for k, v in traces.items()}
+                output_ids = traces['pred_seq']
+            else:
+                output_ids = traces.tolist()
+            for i in range(len(buf)):
+                w_ids = output_ids[i]
+                output_buf = tokenizer.convert_ids_to_tokens(w_ids)
+                output_tokens = []
+                for t in output_buf:
+                    if t in (tokenizer.sep_token, tokenizer.pad_token):
+                        break
+                    output_tokens.append(t)
+                if args.model_type == "roberta":
+                    output_sequence = tokenizer.convert_tokens_to_string(output_tokens)
                 else:
-                    output_ids = traces.tolist()
-                for i in range(len(buf)):
-                    w_ids = output_ids[i]
-                    output_buf = tokenizer.convert_ids_to_tokens(w_ids)
-                    output_tokens = []
-                    for t in output_buf:
-                        if t in (tokenizer.sep_token, tokenizer.pad_token):
-                            break
-                        output_tokens.append(t)
-                    if args.model_type == "roberta":
-                        output_sequence = tokenizer.convert_tokens_to_string(output_tokens)
-                    else:
-                        output_sequence = ' '.join(detokenize(output_tokens))
-                    if '\n' in output_sequence:
-                        output_sequence = " [X_SEP] ".join(output_sequence.split('\n'))
-                    output_lines[buf_id[i]] = output_sequence
-                    if first_batch or batch_count % 50 == 0:
-                        logger.info("{} = {}".format(buf_id[i], output_sequence))
-                    if args.need_score_traces:
-                        score_trace_list[buf_id[i]] = {
-                            'scores': traces['scores'][i], 'wids': traces['wids'][i], 'ptrs': traces['ptrs'][i]}
+                    output_sequence = ' '.join(detokenize(output_tokens))
+                if '\n' in output_sequence:
+                    output_sequence = " [X_SEP] ".join(output_sequence.split('\n'))
+                output_lines[buf_id[i]] = output_sequence
+                if first_batch or batch_count % 50 == 0:
+                    logger.info("{} = {}".format(buf_id[i], output_sequence))
+                if args.need_score_traces:
+                    score_trace_list[buf_id[i]] = {
+                        'scores': traces['scores'][i], 'wids': traces['wids'][i], 'ptrs': traces['ptrs'][i]}
             pbar.update(1)
             first_batch = False
     if args.output_file:
