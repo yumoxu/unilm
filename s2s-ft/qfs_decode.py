@@ -16,18 +16,12 @@ import random
 import pickle
 
 from transformers import BertTokenizer, RobertaTokenizer
-from s2s_ft.modeling_decoding import BertForSeq2SeqDecoder, BertConfig
 from transformers.tokenization_bert import whitespace_tokenize
 import s2s_ft.s2s_loader as seq2seq_loader
 from s2s_ft.utils import load_and_cache_examples
-# from transformers import \
-#     BertTokenizer, RobertaTokenizer
 from s2s_ft.tokenization_unilm import UnilmTokenizer
 from s2s_ft.tokenization_minilm import MinilmTokenizer
-
-# from s2s_ft.modeling_decoding import BertModel
-from s2s_ft.modeling_decoding import MargeDiscriminator, BertForQueryFocusedDecoder
-# from pytorch_transformers import (BertConfig, BertModel, BertTokenizer)
+from s2s_ft.modeling_qfs_decoding import BertConfig, MargeDiscriminator, BertForQueryFocusedDecoder
 
 TOKENIZER_CLASSES = {
     'bert': BertTokenizer,
