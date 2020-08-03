@@ -1016,7 +1016,7 @@ class MargeDiscriminator(nn.Module):
         loss = MSELoss()(pred, label)
         return loss
     
-    def forward(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask, cand_rep):
+    def _forward(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask, cand_rep):
         max_summ_seq_len = summ_id.size(1)
         max_cand_seq_len = cand_id.size(1)
         
@@ -1040,6 +1040,15 @@ class MargeDiscriminator(nn.Module):
         else:
             loss = self.get_loss(pred=group_score)
 
+        return loss, group_score, instc_score
+    
+    def forward(self, cand_rep):
+        """
+            For debug
+        """
+        loss = 0.5
+        group_score = None
+        instc_score = None
         return loss, group_score, instc_score
 
 
