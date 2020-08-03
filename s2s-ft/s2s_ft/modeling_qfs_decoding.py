@@ -1580,6 +1580,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             #         for index, p_ in enumerate(curr_perturbation)
             #     ]
             # for index, p_ in enumerate(curr_layer_perturbation):
+            print(f'Grad of discrim_loss: {discrim_loss.grad}')
+            print(f'Grad of group_score: {group_score.grad}')
+            print(f'Grad of cand_rep: {cand_rep.grad}')
             print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
             print(f'Grad of perturbed_layers[0]: {perturbed_layers[0].grad}')
             print(f'Grad of curr_layer_perturbation[0]: {curr_layer_perturbation[0].grad}')
