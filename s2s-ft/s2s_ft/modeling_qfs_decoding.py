@@ -1741,12 +1741,14 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             #         x_input_ids = curr_ids
             #         start_pos = next_pos
             # else:  # w/o pos shift; generation starts from 0; add a mask
-            start_pos = next_pos - curr_length
             if next_pos == input_length:
                 x_input_ids = mask_ids
+                curr_length = 1
             else:
                 x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
+                curr_length = 2
 
+            start_pos = next_pos - curr_length
             return x_input_ids, start_pos
         
         x_input_ids, start_pos = _get_x_input_ids_and_start_pos()
