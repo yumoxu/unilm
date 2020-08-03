@@ -1436,8 +1436,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # input_ids=input_ids, 
                 input_shape=input_shape,
                 # input_length=input_length,
-                unpert_embedding=pertubed_embedding, 
-                unpert_layers=perturbed_layers,
+                perturbed_embedding=pertubed_embedding, 
+                perturbed_layers=perturbed_layers,
                 # first_token=first_token, 
                 curr_ids=curr_ids
                 )
