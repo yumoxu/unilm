@@ -1565,7 +1565,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(' pplm_loss', (loss - kl_loss).data.cpu().numpy())
 
             # compute gradients
-            loss = Variable(loss, requires_grad = True)
+            # loss = Variable(loss, requires_grad = True)
             loss.backward()
 
             # calculate gradient norms
