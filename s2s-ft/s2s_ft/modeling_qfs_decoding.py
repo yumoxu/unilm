@@ -1015,10 +1015,9 @@ class MargeDiscriminator(nn.Module):
         print(f'label: {label.size()}, pred: {pred.size()}')
         loss = MSELoss()(pred, label)
         return loss
-    
-    def _forward(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask, cand_rep):
+
+    def get_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
         max_summ_seq_len = summ_id.size(1)
-        max_cand_seq_len = cand_id.size(1)
         
         summ_rep = self.bert_model(summ_id, 
             token_type_ids=summ_seg_id, 
@@ -1027,7 +1026,18 @@ class MargeDiscriminator(nn.Module):
         # select class reps
         slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
         slot_rep = slot_rep * slot_mask[:, :, None].float()
+        return slot_rep
 
+    def get_rand_slot_rep(self, d_batch, max_n_slot):
+        """
+            For debug.
+        """
+        slot_rep = torch.rand(size=(d_batch, max_n_slot, 768), device=self.device, dtype=torch.float32)
+        slot_rep = slot_rep * slot_mask[:, :, None].float()
+        return slot_rep
+    
+    def _forward(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask, cand_rep):
+        slot_rep = self.get_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
         instc_score = self._match(cand_rep, slot_rep, instc_mask=slot_mask)
 
         group_score = self._pool(instc_score, instc_mask=slot_mask)  # d_batch * 1
@@ -1043,12 +1053,19 @@ class MargeDiscriminator(nn.Module):
         return loss, group_score, instc_score
     
     def forward(self, cand_rep):
-        """
-            For debug
-        """
-        loss = 0.5
-        group_score = None
-        instc_score = None
+        slot_rep = self.get_rand_slot_rep(d_batch=cand_rep.size(0), max_n_slot=8)
+        instc_score = self._match(cand_rep, slot_rep, instc_mask=slot_mask)
+
+        group_score = self._pool(instc_score, instc_mask=slot_mask)  # d_batch * 1
+        group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
+        print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
+
+        if self.loss_idx >= 0:
+            pred = instc_score[self.loss_idx]
+            loss = self.get_loss(pred=instc_score[self.loss_idx])
+        else:
+            loss = self.get_loss(pred=group_score)
+
         return loss, group_score, instc_score
 
 
