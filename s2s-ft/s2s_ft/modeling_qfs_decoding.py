@@ -1318,7 +1318,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         self.device = device
         self.fp16 = fp16
 
-    def to_var(self, x, requires_grad=False, volatile=False):
+    def to_var(self, x, requires_grad, volatile=False):
         if torch.cuda.is_available() and self.device == 'cuda':
             x = x.cuda()
         elif self.device != 'cuda':
@@ -1530,7 +1530,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # discrim_loss = ce_loss(prediction, label)
             if self.verbosity_level >= VERY_VERBOSE:
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
-            loss += discrim_loss
+            # loss += discrim_loss
+            loss = loss + discrim_loss
             loss_list.append(discrim_loss)
 
             kl_loss = 0.0
