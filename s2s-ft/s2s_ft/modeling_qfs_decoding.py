@@ -955,7 +955,7 @@ class BertModelIncr(BertModel):
 
 
 class MargeDiscriminator(nn.Module):
-    def __init__(self, bert_model, label, loss_idx, pool_func='ls', device='cuda', hidden_size=768, eps=1e-7):
+    def __init__(self, bert_model, label, loss_idx, pool_func='ls', device='cuda', hidden_size=768, eps=1e-7, fp16=False):
         super(MargeDiscriminator, self).__init__()
         self.bert_model = bert_model
         self.hidden_size = hidden_size
@@ -964,6 +964,7 @@ class MargeDiscriminator(nn.Module):
         self.label = label
         self.loss_idx = loss_idx
         self.device = device
+        self.fp16 = fp16
 
     def _match(self, cand_rep, slot_rep, instc_mask):
         """
@@ -981,7 +982,10 @@ class MargeDiscriminator(nn.Module):
         instc_score_in = torch.squeeze(instc_score_in, dim=-1) / np.sqrt(self.hidden_size)  # d_batch * max_ns
 
         instc_score = torch.sigmoid(instc_score_in)
-        instc_score = instc_score * instc_mask.float()
+        if self.fp16:
+            instc_score = instc_score * instc_mask.half()
+        else:
+            instc_score = instc_score * instc_mask.float()
         return instc_score
     
     def _pool(self, instc_score, instc_mask=None):
@@ -1026,7 +1030,11 @@ class MargeDiscriminator(nn.Module):
 
         # select class reps
         slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
-        slot_rep = slot_rep * slot_mask[:, :, None].float()
+
+        if self.fp16:
+            slot_rep = slot_rep * slot_mask[:, :, None].half()
+        else:
+            slot_rep = slot_rep * slot_mask[:, :, None].float()
         return slot_rep
 
     def get_rand_slot_rep(self, d_batch, max_n_slot):
@@ -1525,12 +1533,18 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             kl_loss = 0.0
             if self.kl_scale > 0.0:
                 unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
-                unpert_probs = (
-                        unpert_probs + SMALL_CONST *
+                if self.fp16:
+                    unpert_probs = (unpert_probs + SMALL_CONST *
+                        (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
+                    )
+                    correction = SMALL_CONST * (probs <= SMALL_CONST).half().to(self.device).detach()
+
+                else:
+                    unpert_probs = (unpert_probs + SMALL_CONST *
                         (unpert_probs <= SMALL_CONST).float().to(self.device).detach()
-                )
-                correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(
-                    self.device).detach()
+                    )
+                    correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(self.device).detach()
+
                 corrected_probs = probs + correction.detach()
                 kl_loss = self.kl_scale * (
                     (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
