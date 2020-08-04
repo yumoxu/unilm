@@ -1538,11 +1538,11 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             cand_rep.retain_grad()
             new_accumulated_hidden.retain_grad()
 
-            print(f'curr_layer_perturbation: {curr_layer_perturbation[0]}')
-            print(f'cand_rep: {cand_rep}')
-            print(f'group_score: {group_score}')
-            print(f'discrim_loss: {discrim_loss}')
-            print(f'loss: {loss}')
+            print(f'curr_layer_perturbation: {curr_layer_perturbation.requires_grad}, {curr_layer_perturbation[0]}')
+            print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
+            print(f'group_score: {group_score.requires_grad}, {group_score}')
+            print(f'discrim_loss: {discrim_loss.requires_grad}, {discrim_loss}')
+            print(f'loss: {loss.requires_grad}, {loss}')
             
             loss_list.append(discrim_loss)
 
