@@ -1401,6 +1401,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # if accumulated_hidden is None:
             # accumulated_hidden = 0
         accumulated_hidden = torch.sum(unpert_layers[-1], dim=1)  # sum of the current history
+        print('accumulated_hidden: {accumulated_hidden]')
 
         if self.decay:
             decay_mask = torch.arange(0., 1.0 + SMALL_CONST, 1.0 / (self.window_length))[1:]
@@ -1415,17 +1416,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
 
         if curr_length > self.window_length and self.window_length > 0:
-            # ones_key_val_shape = (
-            #         tuple(past[0].shape[:-2])  # (2, d_batch, num_heads)
-            #         + tuple([window_length])
-            #         + tuple(past[0].shape[-1:])  # embed_size_per_head
-            # )
-
-            # zeros_key_val_shape = (
-            #         tuple(past[0].shape[:-2])
-            #         + tuple([curr_length - window_length])
-            #         + tuple(past[0].shape[-1:])
-            # )
             d_batch, _, d_hidden = unpert_embedding.size()
             ones_key_val_shape = (d_batch, self.window_length, d_hidden)
             zeros_key_val_shape = (d_batch, curr_length - self.window_length, d_hidden)
@@ -1460,7 +1450,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             pertubed_embedding = unpert_embedding + curr_embedding_perturbation
 
             # _, _, _, curr_length, _ = curr_perturbation[0].shape
-            curr_length = curr_embedding_perturbation.shape[-2]
             step_base_params = {
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
@@ -1485,7 +1474,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # all_logits, _, all_hidden = model(last, past=perturbed_past)
 
             hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
-            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
+            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
+            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
             
             # TODO: Check the layer-norm consistency of this with trained discriminator (Sumanth)
             # logits = all_logits[:, -1, :]
@@ -1522,6 +1512,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
 
             # 1 is the perturbation for the present, horizon_length is for the future
+            curr_length = curr_embedding_perturbation.shape[-2]
             with torch.enable_grad():
                 cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
                 discrim_loss, group_score, instc_score = discriminator(cand_rep)
@@ -1565,7 +1556,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(' pplm_loss', (loss - kl_loss).data.cpu().numpy())
 
             # compute gradients
-            loss = Variable(loss, requires_grad = True)
+            # loss = Variable(loss, requires_grad = True)
             loss.backward()
 
             print(f'Grad of discrim_loss: {discrim_loss.grad}')
@@ -1791,10 +1782,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # loop starts
         # curr_length = list(curr_ids.size())[1]
         def _get_x_input_ids_and_start_pos():
-            assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
             """
                 start_pos: the start pos for the current input
             """
+            assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
 
             if next_pos == input_length:
                 x_input_ids = mask_ids
@@ -1901,10 +1892,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             mask_ids=None, 
             sos_ids=None):
         """
-            # If first_token, curr_ids and next_pos will be initialized.
-            # If not first_token, curr_ids and next_pos should be set.
+            We run this function twice in each generation step: once before and once after perturbation.
 
-            # input_length: the conditioned text length.
+            One special case is the first step, when next_pos == input_length.
+            Before perturbation, prev_embedding and prev_encoded_layers are both None;
+            After perturbation, prev_embedding and prev_encoded_layers are provided as perturbed history.
+
         """
         batch_size = input_shape[0]
         input_length = input_shape[1]
@@ -1925,8 +1918,13 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     x_input_ids = curr_ids
                     start_pos = next_pos
             else:  # w/o pos shift; generation starts from 0; add a mask
+                if next_pos == input_length and not (prev_embedding is None or prev_encoded_layers is None):
+                    x_input_ids = mask_ids
+                    start_pos = next_pos
+
                 start_pos = next_pos - curr_length
                 x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
+            
             return x_input_ids, start_pos
         
         x_input_ids, start_pos = _get_x_input_ids_and_start_pos()
