@@ -1488,10 +1488,15 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # logits = all_logits[:, -1, :]
             probs = F.softmax(logits, dim=-1)
 
-            # loss = 0.0
-            loss = torch.zeros(1, requires_grad=True, dtype=float)
-            if self.fp16:
-                loss = loss.half()
+            loss = 0.0
+            # loss = torch.zeros(1, requires_grad=True, dtype=float)
+            # if torch.cuda.is_available() and self.device == 'cuda':
+            #     x = x.cuda()
+            # elif self.device != 'cuda':
+            #     x = x.to(self.device)
+            
+            # if self.fp16:
+            #     x = x.half()
             loss_list = []
 
             # perturb again for the future
