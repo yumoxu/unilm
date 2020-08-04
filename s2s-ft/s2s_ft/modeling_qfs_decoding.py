@@ -1571,6 +1571,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # compute gradients
             # loss = Variable(loss, requires_grad = True)
+            discrim_loss.retain_grad()
+            group_score.retain_grad()
+            cand_rep.retain_grad()
             new_accumulated_hidden.retain_grad()
             loss.backward()
             # discrim_loss.backward()
