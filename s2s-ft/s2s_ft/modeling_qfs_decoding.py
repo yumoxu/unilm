@@ -1571,6 +1571,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # compute gradients
             # loss = Variable(loss, requires_grad = True)
             # loss.backward()
+            discrim_loss.requres_grad = True
             discrim_loss.backward()
 
             print(f'Grad of discrim_loss: {discrim_loss.grad}')
@@ -2619,6 +2620,7 @@ class Perturbator(PreTrainedBertModel):
 
             # compute gradients
             # loss = Variable(loss, requires_grad = True)
+            loss.requres_grad = True
             loss.backward()
 
             print(f'Grad of discrim_loss: {discrim_loss.grad}')
