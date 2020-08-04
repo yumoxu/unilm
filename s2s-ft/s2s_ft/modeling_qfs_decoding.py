@@ -1471,6 +1471,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'mask_ids': mask_ids,
                 'sos_ids': sos_ids,
             }
+            torch.set_grad_enabled(True)
 
             logits, new_embedding, new_encoded_layers = self.step_for_current_perturb(**step_base_params,
                 # input_ids=input_ids, 
