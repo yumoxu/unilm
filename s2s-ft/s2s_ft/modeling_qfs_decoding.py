@@ -1520,7 +1520,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
 
             # 1 is the perturbation for the present, horizon_length is for the future
-            with torch.enable_grad(True):
+            with torch.enable_grad():
                 cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
                 # discrim_loss, group_score, instc_score = discriminator(cand_rep)
                 group_score, instc_score = discriminator(cand_rep)
@@ -1537,7 +1537,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             group_score.retain_grad()
             cand_rep.retain_grad()
             new_accumulated_hidden.retain_grad()
-            
+
             print(f'curr_layer_perturbation: {curr_layer_perturbation[0]}')
             print(f'cand_rep: {cand_rep}')
             print(f'group_score: {group_score}')
