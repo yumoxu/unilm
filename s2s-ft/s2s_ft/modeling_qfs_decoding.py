@@ -1565,21 +1565,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(' pplm_loss', (loss - kl_loss).data.cpu().numpy())
 
             # compute gradients
-            # loss = Variable(loss, requires_grad = True)
+            loss = Variable(loss, requires_grad = True)
             loss.backward()
 
-            # calculate gradient norms
-            # if grad_norms is not None and loss_type == PPLM_BOW:
-            #     grad_norms = [
-            #         torch.max(grad_norms[index], torch.norm(p_.grad * window_mask))
-            #         for index, p_ in enumerate(curr_perturbation)
-            #     ]
-            # else:
-            #     grad_norms = [
-            #         (torch.norm(p_.grad * window_mask) + SMALL_CONST)
-            #         for index, p_ in enumerate(curr_perturbation)
-            #     ]
-            # for index, p_ in enumerate(curr_layer_perturbation):
             print(f'Grad of discrim_loss: {discrim_loss.grad}')
             print(f'Grad of group_score: {group_score.grad}')
             print(f'Grad of cand_rep: {cand_rep.grad}')
@@ -1587,6 +1575,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             print(f'Grad of perturbed_layers[0]: {perturbed_layers[0].grad}')
             print(f'Grad of curr_layer_perturbation[0]: {curr_layer_perturbation[0].grad}')
 
+            # calculate gradient norms
             if layer_grad_norms is not None and embedding_grad_norm is not None:
                 layer_grad_norms = [
                     torch.max(layer_grad_norms[index], torch.norm(p_.grad * window_mask))
@@ -1902,7 +1891,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return new_embedding, new_encoded_layers
 
-    @torch.enable_grad()
     def step(self, input_shape, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
