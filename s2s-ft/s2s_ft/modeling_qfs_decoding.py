@@ -1492,7 +1492,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # logits = all_logits[:, -1, :]
             probs = F.softmax(logits, dim=-1)
 
-            loss = 0.0
+            # loss = 0.0
+            loss = torch.zeros(1, requires_grad=True)
             loss_list = []
 
             # perturb again for the future
@@ -1570,9 +1571,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # compute gradients
             # loss = Variable(loss, requires_grad = True)
-            # loss.backward()
-            discrim_loss.requres_grad = True
-            discrim_loss.backward()
+            loss.backward()
+            # discrim_loss.backward()
 
             print(f'Grad of discrim_loss: {discrim_loss.grad}')
             print(f'Grad of group_score: {group_score.grad}')
