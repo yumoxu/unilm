@@ -1529,7 +1529,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
             # discrim_loss = ce_loss(prediction, label)
-            loss = self.get_loss(pred=group_score)
+            discrim_loss = self.get_loss(pred=group_score)
             if self.verbosity_level >= VERY_VERBOSE:
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
             # loss += discrim_loss
