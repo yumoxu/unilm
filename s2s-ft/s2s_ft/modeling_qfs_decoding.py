@@ -1536,6 +1536,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
             # loss += discrim_loss
             loss = loss + discrim_loss
+            print(f'cand_rep: {cand_rep}')
+            print(f'group_score: {group_score}')
+            print(f'discrim_loss: {discrim_loss}')
+            print(f'loss: {loss}')
             loss_list.append(discrim_loss)
 
             kl_loss = 0.0
