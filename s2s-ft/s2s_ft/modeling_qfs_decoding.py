@@ -1570,7 +1570,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # compute gradients
             # loss = Variable(loss, requires_grad = True)
-            loss.backward()
+            # loss.backward()
+            discrim_loss.backward()
 
             print(f'Grad of discrim_loss: {discrim_loss.grad}')
             print(f'Grad of group_score: {group_score.grad}')
