@@ -1325,6 +1325,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         return Variable(x, requires_grad=requires_grad, volatile=volatile)
 
+    @torch.enable_grad()
     def perturb_past(
             self,
             discriminator,
@@ -1521,8 +1522,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
 
             # 1 is the perturbation for the present, horizon_length is for the future
-            cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
-            discrim_loss, group_score, instc_score = discriminator(cand_rep)
+            with torch.enable_grad():
+                cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
+                discrim_loss, group_score, instc_score = discriminator(cand_rep)
             # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
             # discrim_loss = ce_loss(prediction, label)
             if self.verbosity_level >= VERY_VERBOSE:
@@ -1775,6 +1777,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return log_scores, new_embedding, new_encoded_layers
 
+    @torch.enable_grad()
     def step_for_current_perturb(self, 
             input_shape, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
@@ -1855,6 +1858,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return log_scores, new_embedding, new_encoded_layers
     
+    @torch.enable_grad()
     def step_for_future_perturb(self, input_shape, next_pos, input_embeds, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
@@ -1898,6 +1902,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return new_embedding, new_encoded_layers
 
+    @torch.enable_grad()
     def step(self, input_shape, token_type_ids, position_ids, attention_mask, 
             task_idx=None, mask_qkv=None,
             prev_embedding=None, prev_encoded_layers=None, 
