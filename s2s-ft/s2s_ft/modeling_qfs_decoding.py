@@ -1474,8 +1474,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # all_logits, _, all_hidden = model(last, past=perturbed_past)
 
             hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
-            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
-            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
+            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
+            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
             
             # TODO: Check the layer-norm consistency of this with trained discriminator (Sumanth)
             # logits = all_logits[:, -1, :]
