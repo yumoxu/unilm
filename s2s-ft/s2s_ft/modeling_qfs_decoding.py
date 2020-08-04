@@ -1525,21 +1525,23 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # 1 is the perturbation for the present, horizon_length is for the future
             curr_length = curr_embedding_perturbation.shape[-2]
-            cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
-            # discrim_loss, group_score, instc_score = discriminator(cand_rep)
-            group_score, instc_score = discriminator(cand_rep)
+            @torch.enable_grad()
+                cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
+                # discrim_loss, group_score, instc_score = discriminator(cand_rep)
+                group_score, instc_score = discriminator(cand_rep)
 
-            # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
-            # discrim_loss = ce_loss(prediction, label)
-            discrim_loss = self.get_loss(pred=group_score)
-            if self.verbosity_level >= VERY_VERBOSE:
-                print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
-            # loss += discrim_loss
-            loss = loss + discrim_loss
+                # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
+                # discrim_loss = ce_loss(prediction, label)
+                discrim_loss = self.get_loss(pred=group_score)
+                if self.verbosity_level >= VERY_VERBOSE:
+                    print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
+                # loss += discrim_loss
+                loss = loss + discrim_loss
             print(f'cand_rep: {cand_rep}')
             print(f'group_score: {group_score}')
             print(f'discrim_loss: {discrim_loss}')
             print(f'loss: {loss}')
+            
             loss_list.append(discrim_loss)
 
             kl_loss = 0.0
