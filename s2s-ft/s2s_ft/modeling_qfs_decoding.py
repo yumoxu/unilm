@@ -1327,9 +1327,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
     def get_loss(self, pred):
         pred = pred.view(-1)
-
         self.label = 1.0
-
         label = torch.tensor(pred.shape[0] * [self.label], device=self.device, dtype=torch.half)
         # print(f'label: {label.size()}, pred: {pred.size()}')
         loss = MSELoss()(pred, label)
@@ -1471,8 +1469,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'mask_ids': mask_ids,
                 'sos_ids': sos_ids,
             }
-            # torch.set_grad_enabled(True)
-
             logits, new_embedding, new_encoded_layers = self.step_for_current_perturb(**step_base_params,
                 # input_ids=input_ids, 
                 input_shape=input_shape,
@@ -1524,8 +1520,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
 
             # 1 is the perturbation for the present, horizon_length is for the future
-            curr_length = curr_embedding_perturbation.shape[-2]
-            with torch.enable_grad():
+            with torch.enable_grad(True):
                 cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
                 # discrim_loss, group_score, instc_score = discriminator(cand_rep)
                 group_score, instc_score = discriminator(cand_rep)
@@ -1537,6 +1532,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
                 # loss += discrim_loss
                 loss = loss + discrim_loss
+            print(f'curr_layer_perturbation: {curr_layer_perturbation[0]}')
             print(f'cand_rep: {cand_rep}')
             print(f'group_score: {group_score}')
             print(f'discrim_loss: {discrim_loss}')
