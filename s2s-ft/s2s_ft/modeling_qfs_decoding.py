@@ -1401,10 +1401,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         unpert_embedding, unpert_layers = build_unpert_past()
 
         layer_grad_accumulator = [
-            (np.zeros(p.shape).astype("float32"))
+            (np.zeros(p.shape).astype("float32") + 0.1)
             for p in unpert_layers
         ]
-        embedding_grad_accumulator = np.zeros(unpert_embedding.shape).astype("float32")
+        embedding_grad_accumulator = np.zeros(unpert_embedding.shape).astype("float32") + 0.1
 
         # if accumulated_hidden is None:
             # accumulated_hidden = 0
