@@ -324,8 +324,8 @@ def load_unilm(args):
 
     torch.cuda.empty_cache()
     model.eval()
-    for param in model.parameters():
-        param.requires_grad = False
+    # for param in model.parameters():
+        # param.requires_grad = False
 
     return tokenizer, model, bi_uni_pipeline, model_recover_path
 
@@ -333,7 +333,7 @@ def load_unilm(args):
 def main():
     torch.autograd.set_detect_anomaly(True)
     torch.set_grad_enabled(True)
-    
+
     parser = argparse.ArgumentParser()
     args = parse_args(parser)
     # device, n_gpu = set_env(args)
