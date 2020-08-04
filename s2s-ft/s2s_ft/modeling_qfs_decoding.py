@@ -1401,10 +1401,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         unpert_embedding, unpert_layers = build_unpert_past()
 
         layer_grad_accumulator = [
-            (np.zeros(p.shape).astype("float32") + 0.1)
+            (np.zeros(p.shape).astype("float32"))
             for p in unpert_layers
         ]
-        embedding_grad_accumulator = np.zeros(unpert_embedding.shape).astype("float32") + 0.1
+        embedding_grad_accumulator = np.zeros(unpert_embedding.shape).astype("float32")
 
         # if accumulated_hidden is None:
             # accumulated_hidden = 0
@@ -1593,8 +1593,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             print(f'Grad of group_score: {group_score.grad}')
             print(f'Grad of cand_rep: {cand_rep.grad}')
             print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
-            print(f'Grad of perturbed_layers[0]: {perturbed_layers[0].grad}')
-            print(f'Grad of curr_layer_perturbation[0]: {curr_layer_perturbation[0].grad}')
+            
+            for index, p_ in enumerate(curr_layer_perturbation):
+                print(f'Grad of curr_layer_perturbation[{index}]: {p_.grad}')
 
             # calculate gradient norms
             if layer_grad_norms is not None and embedding_grad_norm is not None:
