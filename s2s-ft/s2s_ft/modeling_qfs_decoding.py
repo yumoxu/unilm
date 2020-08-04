@@ -1471,7 +1471,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'mask_ids': mask_ids,
                 'sos_ids': sos_ids,
             }
-            torch.set_grad_enabled(True)
+            # torch.set_grad_enabled(True)
 
             logits, new_embedding, new_encoded_layers = self.step_for_current_perturb(**step_base_params,
                 # input_ids=input_ids, 
@@ -1525,7 +1525,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # 1 is the perturbation for the present, horizon_length is for the future
             curr_length = curr_embedding_perturbation.shape[-2]
-            @torch.enable_grad()
+            with torch.enable_grad(True):
                 cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
                 # discrim_loss, group_score, instc_score = discriminator(cand_rep)
                 group_score, instc_score = discriminator(cand_rep)
