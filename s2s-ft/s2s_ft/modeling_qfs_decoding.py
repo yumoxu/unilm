@@ -1593,9 +1593,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # print(f'Grad of group_score: {group_score.grad}')
             # print(f'Grad of cand_rep: {cand_rep.grad}')
             # print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
-            
-            for index, p_ in enumerate(curr_layer_perturbation):
-                print(f'Grad of curr_layer_perturbation[{index}]: {p_.grad}')
+            # for index, p_ in enumerate(curr_layer_perturbation):
+            #     print(f'Grad of curr_layer_perturbation[{index}]: {p_.grad}')
 
             # calculate gradient norms
             if layer_grad_norms is not None and embedding_grad_norm is not None:
