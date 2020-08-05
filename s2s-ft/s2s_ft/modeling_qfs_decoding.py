@@ -1079,8 +1079,8 @@ class MargeDiscriminator(nn.Module):
         else:
             loss = self.get_loss(pred=group_score)
 
-        # return loss, group_score, instc_score
-        return group_score, instc_score
+        return loss, group_score, instc_score
+        # return group_score, instc_score
 
 
 class BertEmbeddingsforQueryFocus(nn.Module):
@@ -1529,12 +1529,11 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # 1 is the perturbation for the present, horizon_length is for the future
             with torch.enable_grad():
                 cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
-                # discrim_loss, group_score, instc_score = discriminator(cand_rep)
-                group_score, instc_score = discriminator(cand_rep)
-
+                discrim_loss, group_score, instc_score = discriminator(cand_rep)
+                # group_score, instc_score = discriminator(cand_rep)
                 # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
                 # discrim_loss = ce_loss(prediction, label)
-                discrim_loss = self.get_loss(pred=group_score)
+                # discrim_loss = self.get_loss(pred=group_score)
                 if self.verbosity_level >= VERY_VERBOSE:
                     print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
                 # loss += discrim_loss
