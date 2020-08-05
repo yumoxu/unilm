@@ -1540,10 +1540,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # loss += discrim_loss
                 loss = loss + discrim_loss
 
-            discrim_loss.retain_grad()
-            group_score.retain_grad()
-            cand_rep.retain_grad()
-            new_accumulated_hidden.retain_grad()
+            # discrim_loss.retain_grad()
+            # group_score.retain_grad()
+            # cand_rep.retain_grad()
+            # new_accumulated_hidden.retain_grad()
 
             # print(f'curr_layer_perturbation 0: {curr_layer_perturbation[0].requires_grad}, {curr_layer_perturbation[0]}')
             # print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
@@ -1586,7 +1586,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # compute gradients
             # loss = Variable(loss, requires_grad = True)
-            loss.backward()
+            loss.backward(retain_graph=True)
             # discrim_loss.backward()
 
             # print(f'Grad of discrim_loss: {discrim_loss.grad}')
