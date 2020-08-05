@@ -45,6 +45,6 @@ $python $python_file \
   --horizon_length 0 \
   --num_samples 10 \
   --stepsize 0.04 \
-  --kl_scale 0.00 \
+  --kl_scale 0.01 \
   --gm_scale 0.95 \
   --sample \

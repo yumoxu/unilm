@@ -1475,18 +1475,14 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # perturb again for the future
             # input: embeddings, not ids
+            # FIXME:L check next_pos and history
             curr_unpert_layers = unpert_layers
             curr_unpert_embedding = unpert_embedding
             curr_probs = torch.unsqueeze(probs, dim=1)  # d_batch * 1 * d_vocab, the perturbed prob at the current position
             wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
             for _ in range(self.horizon_length):  # horizon_length is set to 1 so this loop only runs once
                 # as input, use the last expected embedding (intead of actual embedding of a token)
-                # inputs_embeds;: d_batch * 
                 inputs_embeds = torch.matmul(curr_probs, wte.weight.data)
-                # _, curr_unpert_past, curr_all_hidden = model(
-                #     past=curr_unpert_past,
-                #     input_embeds=inputs_embeds
-                # )
                 curr_unpert_embedding, curr_unpert_layers = self.step_for_future_perturb(**step_base_params,
                     input_embeds=inputs_embeds,
                     prev_embedding=curr_unpert_embedding, 
