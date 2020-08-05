@@ -1519,22 +1519,23 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             if self.kl_scale > 0.0:
                 # unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
                 unpert_probs = F.softmax(unpert_logits, dim=-1)
-                if self.fp16:
-                    unpert_correction = SMALL_CONST * (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
-                    correction = SMALL_CONST * (probs <= SMALL_CONST).half().to(self.device).detach()
-                else:
-                    unpert_probs = SMALL_CONST * (unpert_probs <= SMALL_CONST).float().to(self.device).detach()
-                    correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(self.device).detach()
+                # if self.fp16:
+                #     unpert_correction = SMALL_CONST * (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
+                #     correction = SMALL_CONST * (probs <= SMALL_CONST).half().to(self.device).detach()
+                # else:
+                #     unpert_probs = SMALL_CONST * (unpert_probs <= SMALL_CONST).float().to(self.device).detach()
+                #     correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(self.device).detach()
 
-                unpert_probs = (unpert_probs + unpert_correction.detach())
-                corrected_probs = probs + correction.detach()
+                # unpert_probs = (unpert_probs + unpert_correction.detach())
+                # corrected_probs = probs + correction.detach()
+                # print(f'corrected_probs: {corrected_probs}')
                 
                 print(f'probs: {probs}')
                 print(f'unpert_probs: {unpert_probs}')
-                print(f'corrected_probs: {corrected_probs}')
-
-                div = corrected_probs * (corrected_probs / unpert_probs).log()
-                kl_loss = self.kl_scale * div.sum()
+                # div = corrected_probs * (corrected_probs / unpert_probs).log()
+                kl_loss_layer = torch.nn.KLDivLoss(reduction='sum')
+                div = kl_loss_layer(corrected_probs, unpert_probs)
+                kl_loss = self.kl_scale * div
 
                 if self.verbosity_level >= VERY_VERBOSE:
                     print(f'kl_loss: {kl_loss.data.cpu().numpy()}')
