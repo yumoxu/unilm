@@ -1832,10 +1832,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         log_scores = nn.LogSoftmax(dim=-1)(prediction_scores)
 
         # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
-        if forbid_word_mask is not None:
-            log_scores += (forbid_word_mask * -10000.0)
-        if self.min_len and (next_pos - input_length + 1 <= self.min_len):
-            log_scores[:, :, self.eos_id].fill_(-10000.0)
+        # if forbid_word_mask is not None:
+        #     log_scores += (forbid_word_mask * -10000.0)
+        # if self.min_len and (next_pos - input_length + 1 <= self.min_len):
+        #     log_scores[:, :, self.eos_id].fill_(-10000.0)
         
         return log_scores, new_embedding, new_encoded_layers
     
