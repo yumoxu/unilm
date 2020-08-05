@@ -608,7 +608,7 @@ class BertEncoder(nn.Module):
                     all_encoder_layers.append(hidden_states)
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
-        return all_encoder_layers
+    return all_encoder_layers
 
 
 class BertPooler(nn.Module):
@@ -1545,7 +1545,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             cand_rep.retain_grad()
             new_accumulated_hidden.retain_grad()
 
-            print(f'curr_layer_perturbation 11: {curr_layer_perturbation[11].requires_grad}, {curr_layer_perturbation[11]}')
+            print(f'curr_layer_perturbation 0: {curr_layer_perturbation[0].requires_grad}, {curr_layer_perturbation[0]}')
             print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
             print(f'group_score: {group_score.requires_grad}, {group_score}')
             print(f'discrim_loss: {discrim_loss.requires_grad}, {discrim_loss}')
