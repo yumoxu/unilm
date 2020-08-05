@@ -608,7 +608,7 @@ class BertEncoder(nn.Module):
                     all_encoder_layers.append(hidden_states)
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
-    return all_encoder_layers
+        return all_encoder_layers
 
 
 class BertPooler(nn.Module):
