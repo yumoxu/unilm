@@ -1517,7 +1517,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             kl_loss = 0.0
             if self.kl_scale > 0.0:
-                unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
+                # unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
+                unpert_probs = F.softmax(unpert_logits, dim=-1)
                 if self.fp16:
                     unpert_probs = (unpert_probs + SMALL_CONST *
                         (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
