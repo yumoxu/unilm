@@ -1945,24 +1945,18 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         assert next_pos < output_length
 
-        # loop starts
-        curr_length = list(curr_ids.size())[1]
-
+        # curr_length = list(curr_ids.size())[1]
         def _get_x_input_ids_and_start_pos():
-            if self.pos_shift:
-                if next_pos == input_length:
-                    x_input_ids = torch.cat((curr_ids, sos_ids), dim=1)
-                    start_pos = 0
-                else:
-                    x_input_ids = curr_ids
-                    start_pos = next_pos
-            else:  # w/o pos shift; generation starts from 0; add a mask
-                if next_pos == input_length and not (prev_embedding is None or prev_encoded_layers is None):
-                    x_input_ids = mask_ids
-                    start_pos = next_pos
-
-                start_pos = next_pos - curr_length
+            """
+                start_pos: the start pos for the current input
+            """
+            assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
+            if next_pos == input_length:
+                x_input_ids = mask_ids
+                start_pos = next_pos
+            else:
                 x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
+                start_pos = next_pos - 1
             
             return x_input_ids, start_pos
         
@@ -2098,6 +2092,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             print(f'POS {next_pos}: perturb model')
             pert_layers, pert_embedding, _, layer_grad_norms, embedding_grad_norm, _ = self.perturb_past(**perturb_params)
 
+            print(f'POS {next_pos}: foward pass with perturbed history')
             step_params['prev_embedding'] = pert_embedding
             step_params['prev_encoded_layers'] = pert_layers
             pert_logits, pert_embedding, pert_layers = self.step(**step_params)
