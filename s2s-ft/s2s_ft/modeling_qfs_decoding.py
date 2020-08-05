@@ -1611,12 +1611,22 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 ]
                 embedding_grad_norm = (torch.norm(curr_embedding_perturbation.grad * window_mask) + SMALL_CONST)
 
+            
+
             # normalize gradients
+            # layer_grad = [
+            #     -stepsize * (p_.grad * window_mask / layer_grad_norms[index] ** self.gamma).data.cpu().numpy()
+            #     for index, p_ in enumerate(curr_layer_perturbation)
+            # ]
+            # embedding_grad = -stepsize * (curr_embedding_perturbation.grad * window_mask / embedding_grad_norm ** self.gamma).data.cpu().numpy()
+            def finalize_grad(var, norm):
+                return -stepsize * (var.grad * window_mask / norm ** self.gamma).data.cpu().numpy()
+
             layer_grad = [
-                -stepsize * (p_.grad * window_mask / layer_grad_norms[index] ** gamma).data.cpu().numpy()
+                finalize_grad(grad=p_, norm=layer_grad_norms[index])
                 for index, p_ in enumerate(curr_layer_perturbation)
             ]
-            embedding_grad = -stepsize * (curr_embedding_perturbation.grad * window_mask / embedding_grad_norm ** gamma).data.cpu().numpy()
+            embedding_grad = finalize_grad(curr_embedding_perturbation, norm=embedding_grad_norm)
 
             # accumulate gradient
             layer_grad_accumulator = list(map(add, layer_grad, layer_grad_accumulator))
