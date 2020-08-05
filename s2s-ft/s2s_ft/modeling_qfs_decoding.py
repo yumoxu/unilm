@@ -1952,12 +1952,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         prediction_scores, _ = self.cls(last_hidden, None, task_idx=task_idx)
         # log_scores = torch.nn.functional.log_softmax(prediction_scores, dim=-1)
         log_scores = nn.LogSoftmax(dim=-1)(prediction_scores)
-
-        # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
-        if forbid_word_mask is not None:
-            log_scores += (forbid_word_mask * -10000.0)
-        if self.min_len and (next_pos - input_length + 1 <= self.min_len):
-            log_scores[:, :, self.eos_id].fill_(-10000.0)
         
         return log_scores, new_embedding, new_encoded_layers
     
@@ -2056,6 +2050,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             pert_logits, pert_embedding, pert_layers = self.step(**step_params)
             # log_scores = pert_logits[:, -1, :] / self.temperature  # + SMALL_CONST
             log_scores = pert_logits / self.temperature
+
+            # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
+            if forbid_word_mask is not None:
+                log_scores += (forbid_word_mask * -10000.0)
+            if self.min_len and (next_pos - input_length + 1 <= self.min_len):
+                log_scores[:, :, self.eos_id].fill_(-10000.0)
             # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
 
             # for unpert discrim_loss
