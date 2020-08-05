@@ -1238,8 +1238,8 @@ class BertModelIncrForQueryFocus(BertModel):
 
 
 # Global vars for PP
-# SMALL_CONST = 1e-15
-SMALL_CONST = 1e-7
+SMALL_CONST = 1e-15
+# SMALL_CONST = 1e-7
 BIG_CONST = 1e10
 
 QUIET = 0
