@@ -1410,7 +1410,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # if accumulated_hidden is None:
             # accumulated_hidden = 0
         accumulated_hidden = torch.sum(unpert_layers[-1], dim=1)  # sum of the current history
-        print('accumulated_hidden: {accumulated_hidden]')
+        # print(f'accumulated_hidden: {accumulated_hidden}')
 
         if self.decay:
             decay_mask = torch.arange(0., 1.0 + SMALL_CONST, 1.0 / (self.window_length))[1:]
@@ -1545,11 +1545,11 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             cand_rep.retain_grad()
             new_accumulated_hidden.retain_grad()
 
-            print(f'curr_layer_perturbation 0: {curr_layer_perturbation[0].requires_grad}, {curr_layer_perturbation[0]}')
-            print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
-            print(f'group_score: {group_score.requires_grad}, {group_score}')
-            print(f'discrim_loss: {discrim_loss.requires_grad}, {discrim_loss}')
-            print(f'loss: {loss.requires_grad}, {loss}')
+            # print(f'curr_layer_perturbation 0: {curr_layer_perturbation[0].requires_grad}, {curr_layer_perturbation[0]}')
+            # print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
+            # print(f'group_score: {group_score.requires_grad}, {group_score}')
+            # print(f'discrim_loss: {discrim_loss.requires_grad}, {discrim_loss}')
+            # print(f'loss: {loss.requires_grad}, {loss}')
             
             loss_list.append(discrim_loss)
 
@@ -1589,10 +1589,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             loss.backward()
             # discrim_loss.backward()
 
-            print(f'Grad of discrim_loss: {discrim_loss.grad}')
-            print(f'Grad of group_score: {group_score.grad}')
-            print(f'Grad of cand_rep: {cand_rep.grad}')
-            print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
+            # print(f'Grad of discrim_loss: {discrim_loss.grad}')
+            # print(f'Grad of group_score: {group_score.grad}')
+            # print(f'Grad of cand_rep: {cand_rep.grad}')
+            # print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
             
             for index, p_ in enumerate(curr_layer_perturbation):
                 print(f'Grad of curr_layer_perturbation[{index}]: {p_.grad}')
