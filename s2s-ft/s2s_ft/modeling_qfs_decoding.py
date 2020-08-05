@@ -1326,14 +1326,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         return Variable(x, requires_grad=requires_grad, volatile=volatile)
 
-    def get_loss(self, pred):
-        pred = pred.view(-1)
-        self.label = 1.0
-        label = torch.tensor(pred.shape[0] * [self.label], device=self.device, dtype=torch.half)
-        # print(f'label: {label.size()}, pred: {pred.size()}')
-        loss = MSELoss()(pred, label)
-        return loss
-
     @torch.enable_grad()
     def perturb_past(
             self,
@@ -2119,6 +2111,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # get topK word ids and scores
             kk_scores, kk_ids = torch.topk(log_scores, k=K)
+            print(f'log_scores: {log_scores.size()}')
+            print(f'kk_scores: {kk_scores.size()}')
             if len(total_scores) == 0:  # first token
                 k_ids = torch.reshape(kk_ids, [batch_size, K])
                 back_ptrs = torch.zeros(batch_size, K, dtype=torch.long)
@@ -2128,6 +2122,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     beam_masks[-1], [batch_size * K, 1, 1])
                 last_seq_scores = torch.reshape(
                     total_scores[-1], [batch_size * K, 1, 1])
+                print(f'last_eos: {last_eos.size()}')
+                print(f'last_seq_scores: {last_seq_scores.size()}')
                 kk_scores += last_eos * (-10000.0) + last_seq_scores
                 kk_scores = torch.reshape(kk_scores, [batch_size, K * K])
                 k_scores, k_ids = torch.topk(kk_scores, k=K)
