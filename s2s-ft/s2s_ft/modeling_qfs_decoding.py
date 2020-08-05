@@ -2040,18 +2040,15 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # first_token = (next_pos == input_length)
             print(f'POS {next_pos}: generate original token')
             step_params = {
-                # 'input_ids': input_ids,
                 'input_shape': input_shape,
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
                 'attention_mask': attention_mask,
-                # 'input_length': input_length,
                 'prev_embedding': prev_embedding,
                 'prev_encoded_layers': prev_encoded_layers,
                 'task_idx': task_idx,
                 'mask_qkv': mask_qkv,
                 'forbid_word_mask': forbid_word_mask,
-                # 'first_token': first_token,
                 'curr_ids': curr_ids,
                 'next_pos': next_pos,
                 'mask_ids': mask_ids,
@@ -2075,12 +2072,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
                 'attention_mask': attention_mask,
-                # 'input_length': input_length,
                 'task_idx': task_idx,
                 'mask_qkv': mask_qkv,
                 'forbid_word_mask': forbid_word_mask,
                 'stepsize': current_stepsize,
-                # 'first_token': first_token,
                 'curr_ids': curr_ids,
                 'next_pos': next_pos,
                 'prev_embedding': prev_embedding,
@@ -2109,7 +2104,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
             # discrim_loss = ce_loss(prediction, label)
             if self.verbosity_level >= VERY_VERBOSE:
-                print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
+                print(f"unperturbed discrim loss: {unpert_discrim_loss.data.cpu().numpy()}")
             
             # Fuse the modified model and original model
             # TODO: original way is to fuse the two distributions (after softmax)
