@@ -1945,18 +1945,27 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         assert next_pos < output_length
 
-        # curr_length = list(curr_ids.size())[1]
+        curr_length = list(curr_ids.size())[1]
         def _get_x_input_ids_and_start_pos():
             """
                 start_pos: the start pos for the current input
             """
             assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
-            if next_pos == input_length:
+            # if next_pos == input_length:
+            #     x_input_ids = mask_ids
+            #     start_pos = next_pos
+            # else:
+            #     x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
+            #     start_pos = next_pos - 1
+            
+            return x_input_ids, start_pos
+
+            if next_pos == input_length and not (prev_embedding is None or prev_encoded_layers is None):
                 x_input_ids = mask_ids
                 start_pos = next_pos
             else:
+                start_pos = next_pos - curr_length
                 x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
-                start_pos = next_pos - 1
             
             return x_input_ids, start_pos
         
