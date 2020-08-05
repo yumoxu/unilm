@@ -608,7 +608,7 @@ class BertEncoder(nn.Module):
                     all_encoder_layers.append(hidden_states)
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
-        return  
+        return all_encoder_layers
 
 
 class BertPooler(nn.Module):
@@ -1480,6 +1480,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # all_logits, _, all_hidden = model(last, past=perturbed_past)
 
             hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
+            # TODO: double check detach
             # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
             new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
             
