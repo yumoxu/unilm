@@ -411,7 +411,7 @@ class BertSelfAttention(nn.Module):
         if key_history is not None and not isinstance(key_history, list):
             key_layer = torch.cat((key_history, key_layer), dim=-2)
             value_layer = torch.cat((value_history, value_layer), dim=-2)
-
+ 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         # (batch, head, pos, pos)
         attention_scores = torch.matmul(

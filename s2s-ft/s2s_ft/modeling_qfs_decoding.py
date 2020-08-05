@@ -608,7 +608,7 @@ class BertEncoder(nn.Module):
                     all_encoder_layers.append(hidden_states)
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
-        return all_encoder_layers
+        return  
 
 
 class BertPooler(nn.Module):
@@ -1255,7 +1255,8 @@ VERBOSITY_LEVELS = {
 
 
 class BertForQueryFocusedDecoder(PreTrainedBertModel):
-    """refer to BertForPreTraining"""
+    """refer to BertForPreTraining
+    """
     def __init__(self, config, mask_word_id=0, num_labels=2, num_rel=0,
                  search_beam_size=1, length_penalty=1.0, eos_id=0, sos_id=0,
                  forbid_duplicate_ngrams=False, forbid_ignore_set=None, ngram_size=3, min_len=0, mode="s2s", pos_shift=False,
@@ -1402,7 +1403,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         layer_grad_accumulator = [
             (np.zeros(p.shape).astype("float32"))
-            for p in unpert_layers
+            for p in unpert_layers[:-1]
         ]
         embedding_grad_accumulator = np.zeros(unpert_embedding.shape).astype("float32")
 
@@ -1454,7 +1455,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # Compute hidden using perturbed past
             # perturbed_past = list(map(add, past, curr_perturbation))
-            perturbed_layers = list(map(add, unpert_layers, curr_layer_perturbation))
+            perturbed_layers = list(map(add, unpert_layers[:-1], curr_layer_perturbation))
+            perturbed_layers.append(unpert_layers[-1])
             pertubed_embedding = unpert_embedding + curr_embedding_perturbation
 
             # _, _, _, curr_length, _ = curr_perturbation[0].shape
@@ -1470,12 +1472,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'sos_ids': sos_ids,
             }
             logits, new_embedding, new_encoded_layers = self.step_for_current_perturb(**step_base_params,
-                # input_ids=input_ids, 
                 input_shape=input_shape,
-                # input_length=input_length,
                 perturbed_embedding=pertubed_embedding, 
                 perturbed_layers=perturbed_layers,
-                # first_token=first_token, 
                 curr_ids=curr_ids
             )
             # all_logits, _, all_hidden = model(last, past=perturbed_past)
@@ -1613,8 +1612,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # normalize gradients
             layer_grad = [
-                -stepsize *
-                (p_.grad * window_mask / layer_grad_norms[index] ** gamma).data.cpu().numpy()
+                -stepsize * (p_.grad * window_mask / layer_grad_norms[index] ** gamma).data.cpu().numpy()
                 for index, p_ in enumerate(curr_layer_perturbation)
             ]
             embedding_grad = -stepsize * (curr_embedding_perturbation.grad * window_mask / embedding_grad_norm ** gamma).data.cpu().numpy()
@@ -1645,7 +1643,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # apply the accumulated perturbations to the past
         layer_grad_accumulator = [self.to_var(torch.from_numpy(p_), requires_grad=True)
             for p_ in layer_grad_accumulator]
-        pert_layers = list(map(add, unpert_layers, layer_grad_accumulator))
+        pert_layers = list(map(add, unpert_layers[:-1], layer_grad_accumulator))
+        pert_layers.append(unpert_layers[-1])
+
         embedding_grad_accumulator = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
         pert_embedding = unpert_embedding + embedding_grad_accumulator
 
@@ -2330,578 +2330,3 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 ts_list, output_length, padding_value=0).to(input_ids.device)
 
         return traces
-
-
-
-class Perturbator(PreTrainedBertModel):
-    """refer to BertForPreTraining"""
-
-    def __init__(self, config, mask_word_id=0, num_labels=2, num_rel=0,
-                 search_beam_size=1, length_penalty=1.0, eos_id=0, sos_id=0,
-                 forbid_duplicate_ngrams=False, forbid_ignore_set=None, ngram_size=3, min_len=0, mode="s2s", pos_shift=False,
-                 stepsize=0.01,
-                 temperature=1.0,
-                 top_k=10,
-                 num_iterations=3,
-                 grad_length=10000,
-                 horizon_length=1,
-                 window_length=0,
-                 decay=False,
-                 gamma=1.5,
-                 kl_scale=0.01,
-                 verbosity=REGULAR,
-                 device='cuda',
-                 fp16=False):
-        super(BertForQueryFocusedDecoder, self).__init__(config)
-        self.bert = BertModelIncrForQueryFocus(config)
-        self.cls = BertPreTrainingHeads(
-            config, self.bert.embeddings.word_embeddings.weight, num_labels=num_labels)
-        self.apply(self.init_bert_weights)
-        self.crit_mask_lm = nn.CrossEntropyLoss(reduction='none')
-        self.crit_next_sent = nn.CrossEntropyLoss(ignore_index=-1)
-        self.mask_word_id = mask_word_id
-        self.num_labels = num_labels
-        self.num_rel = num_rel
-        if self.num_rel > 0:
-            self.crit_pair_rel = BertPreTrainingPairRel(
-                config, num_rel=num_rel)
-        self.search_beam_size = search_beam_size
-        self.length_penalty = length_penalty
-        self.eos_id = eos_id
-        self.sos_id = sos_id
-        self.forbid_duplicate_ngrams = forbid_duplicate_ngrams
-        self.forbid_ignore_set = forbid_ignore_set
-        self.ngram_size = ngram_size
-        self.min_len = min_len
-        assert mode in ("s2s", "l2r")
-        self.mode = mode
-        self.pos_shift = pos_shift
-
-        # configs for pplm        
-        self.verbosity_level = VERBOSITY_LEVELS.get(verbosity.lower(), REGULAR)
-
-        self.stepsize = stepsize
-        self.temperature = temperature
-        self.top_k = top_k
-        self.num_iterations = num_iterations
-        self.grad_length = grad_length
-        self.horizon_length = horizon_length
-        self.window_length = window_length
-        self.decay = decay
-        self.gamma = gamma
-        self.kl_scale = kl_scale
-
-        self.device = device
-        self.fp16 = fp16
-
-    def to_var(self, x, requires_grad, volatile=False):
-        if torch.cuda.is_available() and self.device == 'cuda':
-            x = x.cuda()
-        elif self.device != 'cuda':
-            x = x.to(self.device)
-        
-        if self.fp16:
-            x = x.half()
-
-        return Variable(x, requires_grad=requires_grad, volatile=volatile)
-
-    def perturb_past(
-            self,
-            discriminator,
-            input_shape,
-            token_type_ids,
-            position_ids,
-            attention_mask,
-            task_idx,
-            mask_qkv,
-            curr_ids,
-            next_pos,
-            forbid_word_mask,
-            stepsize,
-            # unpert_embedding=None,
-            # unpert_layers=None,
-            prev_embedding=None,
-            prev_encoded_layers=None,
-            new_embedding=None,
-            new_encoded_layers=None,
-            unpert_logits=None,
-            accumulated_hidden=None,
-            layer_grad_norms=None,
-            embedding_grad_norm=None,
-            # first_token=None,
-            # input_length=None,
-            mask_ids=None,
-            sos_ids=None
-    ):
-        """
-            prev_embedding and prev_encoded_layers are obtained from a prev forward pass (FP).
-            
-            prev_embedding: tensor:d_batch * seq_len * d_hidden
-            prev_encoded_layers: list of tensors:d_batch * seq_len * d_hidden
-
-            seq_len is the prev seq len, including the input len and the generation len.
-
-            new_embedding and new_encoded_layers are obtained from the current forward pass (FP). 
-
-            We get 
-                1) unpert_embedding from {prev_embedding, new_embedding}[:-1]
-                2) unpert_layers from {prev_encoded_layers, new_encoded_layers}[:-1]
-            
-            We perturb the given unpert_embedding and unpert_layers, then run the forward pass again (Perturbed FP).
-            We perturb the hidden states [:-1] and use mask_ids in the Perturbed FP.
-
-        """
-        # Generate inital perturbed past
-        # each layer gets a grad_accumulator with the shape of (2, d_batch, num_heads, seq_len, embed_size_per_head)
-        def build_unpert_past():
-            assert not self.pos_shift
-            if prev_embedding is None:  # is the first, new_embedding is context + MASK; perturb the context
-                unpert_embedding = new_embedding[:, :-1, :]
-            else:
-                # unpert_embedding = torch.cat((prev_embedding, new_embedding[:, :-2, :]), dim=1)
-                unpert_embedding = prev_embedding
-            
-            if prev_encoded_layers is None:
-                unpert_layers = [x[:, :-1, :] for x in new_encoded_layers]
-            else:
-                # unpert_layers = [torch.cat((x[0], x[1][:, :-1, :]), dim=1)
-                #     for x in zip(prev_encoded_layers, new_encoded_layers)]
-                unpert_layers = prev_encoded_layers
-            return unpert_embedding, unpert_layers
-
-        unpert_embedding, unpert_layers = build_unpert_past()
-
-        layer_grad_accumulator = [
-            (np.zeros(p.shape).astype("float32"))
-            for p in unpert_layers
-        ]
-        embedding_grad_accumulator = np.zeros(unpert_embedding.shape).astype("float32")
-
-        # if accumulated_hidden is None:
-            # accumulated_hidden = 0
-        accumulated_hidden = torch.sum(unpert_layers[-1], dim=1)  # sum of the current history
-        print('accumulated_hidden: {accumulated_hidden]')
-
-        if self.decay:
-            decay_mask = torch.arange(0., 1.0 + SMALL_CONST, 1.0 / (self.window_length))[1:]
-        else:
-            decay_mask = 1.0
-
-        # TODO fix this comment (SUMANTH)
-        # Generate a mask is gradient perturbated is based on a past window
-        # curr_length： current seq_len (generated so far)
-        # _, _, _, curr_length, _ = past[0].shape
-        curr_length = embedding_grad_accumulator.shape[-2]
-        print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
-
-        if curr_length > self.window_length and self.window_length > 0:
-            d_batch, _, d_hidden = unpert_embedding.size()
-            ones_key_val_shape = (d_batch, self.window_length, d_hidden)
-            zeros_key_val_shape = (d_batch, curr_length - self.window_length, d_hidden)
-            
-            ones_mask = torch.ones(ones_key_val_shape)
-            # ones_mask = decay_mask * ones_mask.permute(0, 1, 2, 4, 3)
-            ones_mask = decay_mask * ones_mask.permute(0, 2, 1)
-            ones_mask = ones_mask.permute(0, 2, 1)
-
-            window_mask = torch.cat((ones_mask, torch.zeros(zeros_key_val_shape)), dim=-2).to(self.device)
-        else:
-            # window_mask = torch.ones_like(past[0]).to(device)
-            window_mask = torch.ones_like(unpert_embedding).to(self.device)
-
-        # accumulate perturbations for num_iterations
-        loss_per_iter = []
-        new_accumulated_hidden = None
-        for i in range(self.num_iterations):
-            if self.verbosity_level >= VERBOSE:
-                print(f'\tPerturb Iter {next_pos}.{i + 1}')
-            # curr_perturbation = [
-            #     self.to_var(torch.from_numpy(p_), requires_grad=True, device=device)
-            #     for p_ in grad_accumulator
-            # ]  # grad -> a list of variables
-            curr_layer_perturbation = [self.to_var(torch.from_numpy(p_), requires_grad=True)
-                for p_ in layer_grad_accumulator]
-            curr_embedding_perturbation = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
-
-            # Compute hidden using perturbed past
-            # perturbed_past = list(map(add, past, curr_perturbation))
-            perturbed_layers = list(map(add, unpert_layers, curr_layer_perturbation))
-            pertubed_embedding = unpert_embedding + curr_embedding_perturbation
-
-            # _, _, _, curr_length, _ = curr_perturbation[0].shape
-            step_base_params = {
-                'token_type_ids': token_type_ids,
-                'position_ids': position_ids,
-                'attention_mask': attention_mask,
-                'task_idx': task_idx,
-                'mask_qkv': mask_qkv,
-                'next_pos': next_pos,
-                'forbid_word_mask': forbid_word_mask,
-                'mask_ids': mask_ids,
-                'sos_ids': sos_ids,
-            }
-
-            logits, new_embedding, new_encoded_layers = self.step_for_current_perturb(**step_base_params,
-                # input_ids=input_ids, 
-                input_shape=input_shape,
-                # input_length=input_length,
-                perturbed_embedding=pertubed_embedding, 
-                perturbed_layers=perturbed_layers,
-                # first_token=first_token, 
-                curr_ids=curr_ids
-            )
-            # all_logits, _, all_hidden = model(last, past=perturbed_past)
-
-            hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
-            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
-            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
-            
-            # TODO: Check the layer-norm consistency of this with trained discriminator (Sumanth)
-            # logits = all_logits[:, -1, :]
-            probs = F.softmax(logits, dim=-1)
-
-            loss = 0.0
-            loss_list = []
-
-            # perturb again for the future
-            # input: embeddings, not ids
-            # ce_loss = torch.nn.CrossEntropyLoss()
-            # curr_unpert_past = unpert_past
-            curr_unpert_embedding = unpert_embedding
-            curr_unpert_layers = unpert_layers
-            curr_probs = torch.unsqueeze(probs, dim=1)  # d_batch * 1 * d_vocab, the perturbed prob at the current position
-            # wte = self.model.resize_token_embeddings()
-            wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
-            for _ in range(self.horizon_length):  # horizon_length is set to 1 so this loop only runs once
-                # as input, use the last expected embedding (intead of actual embedding of a token)
-                # inputs_embeds;: d_batch * 
-                inputs_embeds = torch.matmul(curr_probs, wte.weight.data)
-                # _, curr_unpert_past, curr_all_hidden = model(
-                #     past=curr_unpert_past,
-                #     input_embeds=inputs_embeds
-                # )
-                curr_unpert_embedding, curr_unpert_layers = self.step_for_future_perturb(**step_base_params,
-                    input_embeds=inputs_embeds,
-                    prev_embedding=curr_unpert_embedding, 
-                    prev_encoded_layers=curr_unpert_layers,
-                    input_shape=input_shape
-                )
-
-                curr_hidden = curr_unpert_layers[-1]
-                new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
-
-            # 1 is the perturbation for the present, horizon_length is for the future
-            curr_length = curr_embedding_perturbation.shape[-2]
-            with torch.enable_grad():
-                cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
-                discrim_loss, group_score, instc_score = discriminator(cand_rep)
-            # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
-            # discrim_loss = ce_loss(prediction, label)
-            if self.verbosity_level >= VERY_VERBOSE:
-                print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
-            # loss += discrim_loss
-            loss = loss + discrim_loss
-            loss_list.append(discrim_loss)
-
-            kl_loss = 0.0
-            if self.kl_scale > 0.0:
-                unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
-                if self.fp16:
-                    unpert_probs = (unpert_probs + SMALL_CONST *
-                        (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
-                    )
-                    correction = SMALL_CONST * (probs <= SMALL_CONST).half().to(self.device).detach()
-                else:
-                    unpert_probs = (unpert_probs + SMALL_CONST *
-                        (unpert_probs <= SMALL_CONST).float().to(self.device).detach()
-                    )
-                    correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(self.device).detach()
-
-                corrected_probs = probs + correction.detach()
-                
-                print(f'probs: {probs}')
-                print(f'unpert_probs: {unpert_probs}')
-                print(f'corrected_probs: {corrected_probs}')
-
-                kl_loss = self.kl_scale * (
-                    (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
-                )
-                if self.verbosity_level >= VERY_VERBOSE:
-                    print(' kl_loss', kl_loss.data.cpu().numpy())
-                loss += kl_loss
-
-            loss_per_iter.append(loss.data.cpu().numpy())
-            if self.verbosity_level >= VERBOSE:
-                print(' pplm_loss', (loss - kl_loss).data.cpu().numpy())
-
-            # compute gradients
-            # loss = Variable(loss, requires_grad = True)
-            loss.requres_grad = True
-            loss.backward()
-
-            print(f'Grad of discrim_loss: {discrim_loss.grad}')
-            print(f'Grad of group_score: {group_score.grad}')
-            print(f'Grad of cand_rep: {cand_rep.grad}')
-            print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
-            print(f'Grad of perturbed_layers[0]: {perturbed_layers[0].grad}')
-            print(f'Grad of curr_layer_perturbation[0]: {curr_layer_perturbation[0].grad}')
-
-            # calculate gradient norms
-            if layer_grad_norms is not None and embedding_grad_norm is not None:
-                layer_grad_norms = [
-                    torch.max(layer_grad_norms[index], torch.norm(p_.grad * window_mask))
-                    for index, p_ in enumerate(curr_layer_perturbation)
-                ]
-                embedding_grad_norm = torch.max(embedding_grad_norm, torch.norm(curr_embedding_perturbation.grad * window_mask))
-            else:
-                layer_grad_norms = [
-                    (torch.norm(p_.grad * window_mask) + SMALL_CONST)
-                    for index, p_ in enumerate(curr_layer_perturbation)
-                ]
-                embedding_grad_norm = (torch.norm(curr_embedding_perturbation.grad * window_mask) + SMALL_CONST)
-
-            # normalize gradients
-            layer_grad = [
-                -stepsize *
-                (p_.grad * window_mask / layer_grad_norms[index] ** gamma).data.cpu().numpy()
-                for index, p_ in enumerate(curr_layer_perturbation)
-            ]
-            embedding_grad = -stepsize * (curr_embedding_perturbation.grad * window_mask / embedding_grad_norm ** gamma).data.cpu().numpy()
-
-            # accumulate gradient
-            layer_grad_accumulator = list(map(add, layer_grad, layer_grad_accumulator))
-            embedding_grad_accumulator = embedding_grad + embedding_grad_accumulator
-
-            # reset gradients, just to make sure
-            for p_ in curr_layer_perturbation:
-                p_.grad.data.zero_()
-            curr_embedding_perturbation.grad.data.zero_()
-
-            # removing past from the graph
-            # new_past = []
-            # for p_ in past:
-            #     new_past.append(p_.detach())
-            # past = new_past
-
-            # remove hidden states from the graph
-            # TODO: test this code snippet
-            new_unpert_layers = []
-            for p_ in unpert_layers:
-                new_unpert_layers.append(p_.detach())
-            unpert_layers = new_unpert_layers
-            unpert_embedding = unpert_embedding.detach()
-
-        # apply the accumulated perturbations to the past
-        layer_grad_accumulator = [self.to_var(torch.from_numpy(p_), requires_grad=True)
-            for p_ in layer_grad_accumulator]
-        pert_layers = list(map(add, unpert_layers, layer_grad_accumulator))
-        embedding_grad_accumulator = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
-        pert_embedding = unpert_embedding + embedding_grad_accumulator
-
-        return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
-
-    def step_for_current_perturb(self, 
-            input_shape, token_type_ids, position_ids, attention_mask, 
-            task_idx=None, mask_qkv=None,
-            perturbed_embedding=None, 
-            perturbed_layers=None, 
-            forbid_word_mask=None,
-            # first_token=None, 
-            curr_ids=None, 
-            next_pos=None,
-            mask_ids=None, 
-            sos_ids=None):
-        """
-        
-        """
-        batch_size = input_shape[0]
-        input_length = input_shape[1]
-        output_shape = list(token_type_ids.size())
-        output_length = output_shape[1]
-
-        assert next_pos < output_length
-
-        # loop starts
-        # curr_length = list(curr_ids.size())[1]
-        def _get_x_input_ids_and_start_pos():
-            """
-                start_pos: the start pos for the current input
-            """
-            assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
-
-            if next_pos == input_length:
-                x_input_ids = mask_ids
-                start_pos = next_pos 
-            else:
-                x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
-                start_pos = next_pos - 1
-            
-            return x_input_ids, start_pos
-        
-        x_input_ids, start_pos = _get_x_input_ids_and_start_pos()
-        print(f'start_pos: {start_pos}, next_pos: {next_pos}')
-        
-        # prepare input
-        # TODO: fix the following inputs to BERT
-        # TODO: what does start_pos mean?
-        curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
-        curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
-        curr_position_ids = position_ids[:, start_pos:next_pos + 1]
-
-        print(f'x_input_ids: {x_input_ids.size()}')
-        print(f'curr_token_type_ids: {curr_token_type_ids.size()}')
-        print(f'curr_position_ids: {curr_position_ids.size()}')
-        print(f'curr_attention_mask: {curr_attention_mask.size()}')
-        if mask_qkv is not None:
-            print(f'mask_qkv: {mask_qkv.size()}')
-        if perturbed_embedding is not None:
-            print(f'perturbed_embedding: {perturbed_embedding.size()}')
-        if perturbed_layers:
-            print(f'perturbed_layers: {perturbed_layers[0].size()} * {len(perturbed_layers)}')
-        
-        new_embedding, new_encoded_layers, _ = self.bert(
-                input_ids=x_input_ids, token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, 
-                attention_mask=curr_attention_mask,
-                output_all_encoded_layers=True, 
-                prev_embedding=perturbed_embedding, 
-                prev_encoded_layers=perturbed_layers, 
-                mask_qkv=mask_qkv)
-
-        # make predictions
-        last_hidden = new_encoded_layers[-1][:, -1:, :]
-        prediction_scores, _ = self.cls(last_hidden, None, task_idx=task_idx)
-        log_scores = torch.nn.functional.log_softmax(prediction_scores, dim=-1)
-
-        # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
-        if forbid_word_mask is not None:
-            log_scores += (forbid_word_mask * -10000.0)
-        if self.min_len and (next_pos - input_length + 1 <= self.min_len):
-            log_scores[:, :, self.eos_id].fill_(-10000.0)
-        
-        return log_scores, new_embedding, new_encoded_layers
-    
-    def step_for_future_perturb(self, input_shape, next_pos, input_embeds, token_type_ids, position_ids, attention_mask, 
-            task_idx=None, mask_qkv=None,
-            prev_embedding=None, prev_encoded_layers=None, 
-            forbid_word_mask=None,
-            mask_ids=None,
-            sos_ids=None):
-        """
-            For future hidden states in plug and play.
-        """
-        input_length = input_shape[1]
-
-        def _get_x_input_embeds_and_start_pos():
-            """
-                start_pos: the start pos for the current input
-            """
-            assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
-            mask_embeddings = self.bert.embeddings.word_embeddings(mask_ids)
-
-            if next_pos == input_length:
-                x_input_embeds = mask_embeddings
-                start_pos = next_pos 
-            else:
-                x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
-                start_pos = next_pos - 1
-            
-            return x_input_embeds, start_pos
-          
-        x_input_embeds, start_pos = _get_x_input_embeds_and_start_pos()
-        print(f'start_pos: {start_pos}, next_pos: {next_pos}')
-        
-        curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
-        curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
-        curr_position_ids = position_ids[:, start_pos:next_pos + 1]
-        new_embedding, new_encoded_layers, _ = self.bert(
-                input_embeds=x_input_embeds, 
-                token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, attention_mask=curr_attention_mask,
-                output_all_encoded_layers=True, 
-                prev_embedding=prev_embedding, 
-                prev_encoded_layers=prev_encoded_layers, 
-                mask_qkv=mask_qkv)
-        
-        return new_embedding, new_encoded_layers
-
-    def step(self, input_shape, token_type_ids, position_ids, attention_mask, 
-            task_idx=None, mask_qkv=None,
-            prev_embedding=None, prev_encoded_layers=None, 
-            forbid_word_mask=None,
-            # first_token=None, 
-            curr_ids=None, 
-            next_pos=None,
-            mask_ids=None, 
-            sos_ids=None):
-        """
-            We run this function twice in each generation step: once before and once after perturbation.
-
-            One special case is the first step, when next_pos == input_length.
-            Before perturbation, prev_embedding and prev_encoded_layers are both None;
-            After perturbation, prev_embedding and prev_encoded_layers are provided as perturbed history.
-
-        """
-        batch_size = input_shape[0]
-        input_length = input_shape[1]
-        output_shape = list(token_type_ids.size())
-        output_length = output_shape[1]
-
-        assert next_pos < output_length
-
-        # loop starts
-        curr_length = list(curr_ids.size())[1]
-
-        def _get_x_input_ids_and_start_pos():
-            if self.pos_shift:
-                if next_pos == input_length:
-                    x_input_ids = torch.cat((curr_ids, sos_ids), dim=1)
-                    start_pos = 0
-                else:
-                    x_input_ids = curr_ids
-                    start_pos = next_pos
-            else:  # w/o pos shift; generation starts from 0; add a mask
-                if next_pos == input_length and not (prev_embedding is None or prev_encoded_layers is None):
-                    x_input_ids = mask_ids
-                    start_pos = next_pos
-
-                start_pos = next_pos - curr_length
-                x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
-            
-            return x_input_ids, start_pos
-        
-        x_input_ids, start_pos = _get_x_input_ids_and_start_pos()
-        
-        # prepare input
-        curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
-        curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
-        curr_position_ids = position_ids[:, start_pos:next_pos + 1]
-
-        print(f'x_input_ids: {x_input_ids.size()}')
-        print(f'curr_token_type_ids: {curr_token_type_ids.size()}')
-        print(f'curr_position_ids: {curr_position_ids.size()}')
-        print(f'curr_attention_mask: {curr_attention_mask.size()}')
-        if mask_qkv is not None:
-            print(f'mask_qkv: {mask_qkv.size()}')
-        if prev_embedding is not None:
-            print(f'prev_embedding: {prev_embedding.size()}')
-        if prev_encoded_layers:
-            print(f'prev_encoded_layers: {prev_encoded_layers[0].size()} * {len(prev_encoded_layers)}')
-        
-        new_embedding, new_encoded_layers, _ = self.bert(
-                input_ids=x_input_ids, token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, 
-                attention_mask=curr_attention_mask,
-                output_all_encoded_layers=True, 
-                prev_embedding=prev_embedding, prev_encoded_layers=prev_encoded_layers, 
-                mask_qkv=mask_qkv)
-
-        # make predictions
-        last_hidden = new_encoded_layers[-1][:, -1:, :]
-        prediction_scores, _ = self.cls(last_hidden, None, task_idx=task_idx)
-        log_scores = torch.nn.functional.log_softmax(prediction_scores, dim=-1)
-
-        # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
-        if forbid_word_mask is not None:
-            log_scores += (forbid_word_mask * -10000.0)
-        if self.min_len and (next_pos - input_length + 1 <= self.min_len):
-            log_scores[:, :, self.eos_id].fill_(-10000.0)
-        
-        return log_scores, new_embedding, new_encoded_layers
