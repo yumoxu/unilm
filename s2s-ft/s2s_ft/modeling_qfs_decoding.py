@@ -2088,7 +2088,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             step_params['prev_embedding'] = pert_embedding
             step_params['prev_encoded_layers'] = pert_layers
             pert_logits, pert_embedding, pert_layers = self.step(**step_params)
-            log_scores = pert_logits[:, -1, :] / self.temperature  # + SMALL_CONST
+            # log_scores = pert_logits[:, -1, :] / self.temperature  # + SMALL_CONST
+            log_scores = pert_logits / self.temperature
             # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
 
             # for unpert discrim_loss
