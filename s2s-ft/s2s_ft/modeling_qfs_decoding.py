@@ -1828,7 +1828,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # make predictions
         last_hidden = new_encoded_layers[-1][:, -1:, :]
         prediction_scores, _ = self.cls(last_hidden, None, task_idx=task_idx)
-        log_scores = torch.nn.functional.log_softmax(prediction_scores, dim=-1)
+        # log_scores = torch.nn.functional.log_softmax(prediction_scores, dim=-1)
+        log_scores = nn.LogSoftmax(dim=-1)(prediction_scores)
 
         # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
         if forbid_word_mask is not None:
@@ -1949,7 +1950,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # make predictions
         last_hidden = new_encoded_layers[-1][:, -1:, :]
         prediction_scores, _ = self.cls(last_hidden, None, task_idx=task_idx)
-        log_scores = torch.nn.functional.log_softmax(prediction_scores, dim=-1)
+        # log_scores = torch.nn.functional.log_softmax(prediction_scores, dim=-1)
+        log_scores = nn.LogSoftmax(dim=-1)(prediction_scores)
 
         # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
         if forbid_word_mask is not None:
