@@ -1957,15 +1957,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # else:
             #     x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
             #     start_pos = next_pos - 1
-            
-            return x_input_ids, start_pos
-
             if next_pos == input_length and not (prev_embedding is None or prev_encoded_layers is None):
                 x_input_ids = mask_ids
                 start_pos = next_pos
             else:
-                start_pos = next_pos - curr_length
                 x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
+                start_pos = next_pos - curr_length
             
             return x_input_ids, start_pos
         
