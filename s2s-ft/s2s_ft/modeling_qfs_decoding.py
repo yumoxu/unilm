@@ -1238,8 +1238,8 @@ class BertModelIncrForQueryFocus(BertModel):
 
 
 # Global vars for PP
-SMALL_CONST = 1e-15
-# SMALL_CONST = 1e-7
+# SMALL_CONST = 1e-15
+SMALL_CONST = 1e-6
 BIG_CONST = 1e10
 
 QUIET = 0
@@ -1520,24 +1520,21 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
                 unpert_probs = F.softmax(unpert_logits, dim=-1)
                 if self.fp16:
-                    unpert_probs = (unpert_probs + SMALL_CONST *
-                        (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
-                    )
+                    unpert_correction = SMALL_CONST * (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
                     correction = SMALL_CONST * (probs <= SMALL_CONST).half().to(self.device).detach()
                 else:
-                    unpert_probs = (unpert_probs + SMALL_CONST *
-                        (unpert_probs <= SMALL_CONST).float().to(self.device).detach()
-                    )
+                    unpert_probs = SMALL_CONST * (unpert_probs <= SMALL_CONST).float().to(self.device).detach()
                     correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(self.device).detach()
 
+                unpert_probs = (unpert_probs + unpert_correction.detach())
                 corrected_probs = probs + correction.detach()
                 
                 print(f'probs: {probs}')
                 print(f'unpert_probs: {unpert_probs}')
                 print(f'corrected_probs: {corrected_probs}')
 
-                div = (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
-                kl_loss = self.kl_scale * div
+                div = corrected_probs * (corrected_probs / unpert_probs).log()
+                kl_loss = self.kl_scale * div.sum()
 
                 if self.verbosity_level >= VERY_VERBOSE:
                     print(f'kl_loss: {kl_loss.data.cpu().numpy()}')
