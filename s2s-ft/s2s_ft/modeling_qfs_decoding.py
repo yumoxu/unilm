@@ -1534,7 +1534,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(f'unpert_probs: {unpert_probs}')
                 # div = corrected_probs * (corrected_probs / unpert_probs).log()
                 kl_loss_layer = torch.nn.KLDivLoss(reduction='sum')
-                div = kl_loss_layer(corrected_probs, unpert_probs)
+                div = kl_loss_layer(probs, unpert_probs)
                 kl_loss = self.kl_scale * div
 
                 if self.verbosity_level >= VERY_VERBOSE:
