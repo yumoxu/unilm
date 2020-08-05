@@ -2118,29 +2118,16 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
 
         if curr_length > self.window_length and self.window_length > 0:
-            # ones_key_val_shape = (
-            #         tuple(past[0].shape[:-2])  # (2, d_batch, num_heads)
-            #         + tuple([window_length])
-            #         + tuple(past[0].shape[-1:])  # embed_size_per_head
-            # )
-
-            # zeros_key_val_shape = (
-            #         tuple(past[0].shape[:-2])
-            #         + tuple([curr_length - window_length])
-            #         + tuple(past[0].shape[-1:])
-            # )
             d_batch, _, d_hidden = unpert_embedding.size()
             ones_key_val_shape = (d_batch, self.window_length, d_hidden)
             zeros_key_val_shape = (d_batch, curr_length - self.window_length, d_hidden)
             
             ones_mask = torch.ones(ones_key_val_shape)
-            # ones_mask = decay_mask * ones_mask.permute(0, 1, 2, 4, 3)
             ones_mask = decay_mask * ones_mask.permute(0, 2, 1)
             ones_mask = ones_mask.permute(0, 2, 1)
 
             window_mask = torch.cat((ones_mask, torch.zeros(zeros_key_val_shape)), dim=-2).to(self.device)
         else:
-            # window_mask = torch.ones_like(past[0]).to(device)
             window_mask = torch.ones_like(unpert_embedding).to(self.device)
 
         # accumulate perturbations for num_iterations
@@ -2149,20 +2136,14 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         for i in range(self.num_iterations):
             if self.verbosity_level >= VERBOSE:
                 print(f'\tPerturb Iter {next_pos}.{i + 1}')
-            # curr_perturbation = [
-            #     self.to_var(torch.from_numpy(p_), requires_grad=True, device=device)
-            #     for p_ in grad_accumulator
-            # ]  # grad -> a list of variables
             curr_layer_perturbation = [self.to_var(torch.from_numpy(p_), requires_grad=True)
                 for p_ in layer_grad_accumulator]
             curr_embedding_perturbation = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
 
             # Compute hidden using perturbed past
-            # perturbed_past = list(map(add, past, curr_perturbation))
             perturbed_layers = list(map(add, unpert_layers, curr_layer_perturbation))
             pertubed_embedding = unpert_embedding + curr_embedding_perturbation
 
-            # _, _, _, curr_length, _ = curr_perturbation[0].shape
             curr_length = curr_embedding_perturbation.shape[-2]
             step_base_params = {
                 'token_type_ids': token_type_ids,
@@ -2176,7 +2157,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'sos_ids': sos_ids,
             }
             logits, new_embedding, new_encoded_layers = self.step(**step_base_params,
-                # input_ids=input_ids, 
                 input_shape=input_shape,
                 # input_length=input_length,
                 prev_embedding=pertubed_embedding, 

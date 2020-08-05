@@ -1386,8 +1386,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             if prev_encoded_layers is None:
                 unpert_layers = [x[:, :-1, :] for x in new_encoded_layers]
             else:
-                # unpert_layers = [torch.cat((x[0], x[1][:, :-1, :]), dim=1)
-                #     for x in zip(prev_encoded_layers, new_encoded_layers)]
                 unpert_layers = prev_encoded_layers
             return unpert_embedding, unpert_layers
 
@@ -1411,9 +1409,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         # TODO fix this comment (SUMANTH)
         # Generate a mask is gradient perturbated is based on a past window
-        # curr_length： current seq_len (generated so far)
-        # _, _, _, curr_length, _ = past[0].shape
-        curr_length = embedding_grad_accumulator.shape[-2]
+        curr_length = embedding_grad_accumulator.shape[-2]  # current history length (context + generation so far)
         print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
 
         if curr_length > self.window_length and self.window_length > 0:
@@ -1437,10 +1433,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         for i in range(self.num_iterations):
             if self.verbosity_level >= VERBOSE:
                 print(f'\tPerturb Iter {next_pos}.{i + 1}')
-            # curr_perturbation = [
-            #     self.to_var(torch.from_numpy(p_), requires_grad=True, device=device)
-            #     for p_ in grad_accumulator
-            # ]  # grad -> a list of variables
+            
             curr_layer_perturbation = [self.to_var(torch.from_numpy(p_), requires_grad=True)
                 for p_ in layer_grad_accumulator]
             curr_embedding_perturbation = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
@@ -1451,7 +1444,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             perturbed_layers.append(unpert_layers[-1])
             pertubed_embedding = unpert_embedding + curr_embedding_perturbation
 
-            # _, _, _, curr_length, _ = curr_perturbation[0].shape
             step_base_params = {
                 'token_type_ids': token_type_ids,
                 'position_ids': position_ids,
@@ -1469,7 +1461,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 perturbed_layers=perturbed_layers,
                 curr_ids=curr_ids
             )
-            # all_logits, _, all_hidden = model(last, past=perturbed_past)
 
             hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
             # TODO: double check detach
@@ -1477,28 +1468,16 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
             
             # TODO: Check the layer-norm consistency of this with trained discriminator (Sumanth)
-            # logits = all_logits[:, -1, :]
             probs = F.softmax(logits, dim=-1)
 
             loss = 0.0
-            # loss = torch.zeros(1, requires_grad=True, dtype=float)
-            # if torch.cuda.is_available() and self.device == 'cuda':
-            #     x = x.cuda()
-            # elif self.device != 'cuda':
-            #     x = x.to(self.device)
-            
-            # if self.fp16:
-            #     x = x.half()
             loss_list = []
 
             # perturb again for the future
             # input: embeddings, not ids
-            # ce_loss = torch.nn.CrossEntropyLoss()
-            # curr_unpert_past = unpert_past
-            curr_unpert_embedding = unpert_embedding
             curr_unpert_layers = unpert_layers
+            curr_unpert_embedding = unpert_embedding
             curr_probs = torch.unsqueeze(probs, dim=1)  # d_batch * 1 * d_vocab, the perturbed prob at the current position
-            # wte = self.model.resize_token_embeddings()
             wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
             for _ in range(self.horizon_length):  # horizon_length is set to 1 so this loop only runs once
                 # as input, use the last expected embedding (intead of actual embedding of a token)
@@ -1519,17 +1498,13 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
 
             # 1 is the perturbation for the present, horizon_length is for the future
-            with torch.enable_grad():
-                cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
-                discrim_loss, group_score, instc_score = discriminator(cand_rep)
-                # group_score, instc_score = discriminator(cand_rep)
-                # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
-                # discrim_loss = ce_loss(prediction, label)
-                # discrim_loss = self.get_loss(pred=group_score)
-                if self.verbosity_level >= VERY_VERBOSE:
-                    print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
-                # loss += discrim_loss
-                loss = loss + discrim_loss
+            # with torch.enable_grad():
+            cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
+            discrim_loss, group_score, instc_score = discriminator(cand_rep)
+            if self.verbosity_level >= VERY_VERBOSE:
+                print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
+            loss += discrim_loss
+            # loss = loss + discrim_loss
 
             # discrim_loss.retain_grad()
             # group_score.retain_grad()
@@ -1564,11 +1539,11 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(f'unpert_probs: {unpert_probs}')
                 print(f'corrected_probs: {corrected_probs}')
 
-                kl_loss = self.kl_scale * (
-                    (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
-                )
+                div = (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
+                kl_loss = self.kl_scale * div
+
                 if self.verbosity_level >= VERY_VERBOSE:
-                    print(' kl_loss', kl_loss.data.cpu().numpy())
+                    print(f'kl_loss: {kl_loss.data.cpu().numpy()}')
                 loss += kl_loss
 
             loss_per_iter.append(loss.data.cpu().numpy())
@@ -1942,12 +1917,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 start_pos: the start pos for the current input
             """
             assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
-            # if next_pos == input_length:
-            #     x_input_ids = mask_ids
-            #     start_pos = next_pos
-            # else:
-            #     x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
-            #     start_pos = next_pos - 1
             if next_pos == input_length and not (prev_embedding is None or prev_encoded_layers is None):
                 x_input_ids = mask_ids
                 start_pos = next_pos
@@ -2094,8 +2063,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # for unpert discrim_loss
             unpert_discrim_loss, _, _ = discriminator(torch.mean(new_last_hidden, dim=1))
-            # label = torch.tensor(prediction.shape[0] * [class_label], device=self.device, dtype=torch.long)
-            # discrim_loss = ce_loss(prediction, label)
             if self.verbosity_level >= VERY_VERBOSE:
                 print(f"unperturbed discrim loss: {unpert_discrim_loss.data.cpu().numpy()}")
             
