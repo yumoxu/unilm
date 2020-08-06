@@ -1481,8 +1481,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     prev_embedding=unpert_embedding, 
                     prev_encoded_layers=unpert_layers
                 )
-                curr_hidden = curr_unpert_layers[-1]
-                new_accumulated_hidden = new_accumulated_hidden + torch.sum(curr_hidden, dim=1)
+                next_hidden = next_layers[-1]
+                new_accumulated_hidden = new_accumulated_hidden + torch.sum(next_hidden, dim=1)
             elif self.horizon_length > 1:
                 raise ValueError('Cannot set horizon_length over 1 since it has not been implemented.')
 
