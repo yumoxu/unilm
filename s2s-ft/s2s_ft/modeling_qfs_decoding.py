@@ -1479,7 +1479,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 inputs_embeds = torch.matmul(curr_probs, wte.weight.data)
 
                 next_embedding, next_layers = self.step_for_future_perturb(**step_base_params,
-                    input_shape=input_shape
+                    input_shape=input_shape,
                     input_embeds=inputs_embeds,
                     prev_embedding=unpert_layers, 
                     prev_encoded_layers=unpert_embedding
