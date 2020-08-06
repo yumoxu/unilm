@@ -324,8 +324,8 @@ def load_unilm(args):
 
     torch.cuda.empty_cache()
     model.eval()
-    # for param in model.parameters():
-        # param.requires_grad = False
+    for param in model.parameters():
+        param.requires_grad = False
 
     return tokenizer, model, bi_uni_pipeline, model_recover_path
 
