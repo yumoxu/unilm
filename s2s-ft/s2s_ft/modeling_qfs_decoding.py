@@ -1913,9 +1913,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # Here beam search does not need softmax so we do this with logits
             # A potential problem is logits are not ensured to be non-negative 
             # log_scores = (pert_logits ** self.gm_scale) * (logits ** (1 - self.gm_scale))
+            log_scores = self.gm_scale * pert_logits + (1 - self.gm_scale) * logits
             # print(f'pert_logits: {pert_logits.size()}, logits: {logits.size()}')
             # log_scores = (pert_logits.data.cpu() ** self.gm_scale) * (logits.data.cpu() ** (1 - self.gm_scale))
-            log_scores = logits
 
             # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
             if forbid_word_mask is not None:
