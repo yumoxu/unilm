@@ -1490,7 +1490,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 raise ValueError('Cannot set horizon_length over 1 since it has not been implemented.')
 
             # 1 is the perturbation for the present, horizon_length is for the future
-            # with torch.enable_grad():
             # FIXME the summation can be 2 for each perturbation; make the norm right or use only the last token for accumulation
             cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
             discrim_loss, group_score, instc_score = discriminator(cand_rep)
@@ -1526,11 +1525,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # corrected_probs = probs + correction.detach()
                 # print(f'corrected_probs: {corrected_probs}')
                 
-                print(f'probs: {probs}')
-                print(f'unpert_probs: {unpert_probs}')
+                # print(f'probs: {probs}')
+                # print(f'unpert_probs: {unpert_probs}')
                 # div = corrected_probs * (corrected_probs / unpert_probs).log()
                 kl_loss_layer = torch.nn.KLDivLoss(reduction='sum')
-                div = kl_loss_layer(probs, unpert_probs)
+                # div = kl_loss_layer(probs, unpert_probs)
+                div = kl_loss_layer(logits, unpert_probs)
                 kl_loss = self.kl_scale * div
 
                 if self.verbosity_level >= VERY_VERBOSE:
