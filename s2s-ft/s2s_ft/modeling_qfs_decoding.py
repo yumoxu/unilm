@@ -1914,7 +1914,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # A potential problem is logits are not ensured to be non-negative 
             # log_scores = ((pert_logits ** self.gm_scale) * (logits ** (1 - self.gm_scale)))
             # print(f'pert_logits: {pert_logits.size()}, logits: {logits.size()}')
-            log_scores = (pert_logits.data.cpu().numpy() ** self.gm_scale) * (logits.data.cpu().numpy()) ** (1 - self.gm_scale))
+            log_scores = (pert_logits.data.cpu().numpy() ** self.gm_scale) * (logits.data.cpu().numpy() ** (1 - self.gm_scale))
             # log_scores = pert_logits
 
             # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
