@@ -1403,7 +1403,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         else:
             decay_mask = 1.0
 
-        # TODO fix this comment (SUMANTH)
         # Generate a mask is gradient perturbated is based on a past window
         curr_length = embedding_grad_accumulator.shape[-2]  # current history length (context + generation so far)
         print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
@@ -1458,11 +1457,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             )
 
             hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
-            # TODO double check detach
-            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
-            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
+            # FIXME double check detach
+            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
+            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
             
-            # TODO Check the layer-norm consistency of this with trained discriminator (Sumanth)
             probs = F.softmax(logits, dim=-1)
 
             loss = 0.0
@@ -1528,6 +1526,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # print(f'probs: {probs}')
                 # print(f'unpert_probs: {unpert_probs}')
                 # div = corrected_probs * (corrected_probs / unpert_probs).log()
+                # TODO double check KL loss; it was minus sometimes
                 kl_loss_layer = torch.nn.KLDivLoss(reduction='sum')
                 # div = kl_loss_layer(probs, unpert_probs)
                 div = kl_loss_layer(logits, unpert_probs)
@@ -1649,7 +1648,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         print(f'start_pos: {start_pos}, next_pos: {next_pos}')
         
         # prepare input
-        # TODO: fix the following inputs to BERT
         curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
         curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
         curr_position_ids = position_ids[:, start_pos:next_pos + 1]
@@ -1905,7 +1903,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(f"unperturbed discrim loss: {unpert_discrim_loss.data.cpu().numpy()}")
             
             # Fuse the modified model and original model
-            # TODO: original way is to fuse the two distributions (after softmax)
+            # FIXME original way is to fuse the two distributions (after softmax)
             # here we don't do this since log scores are not ensured to be non-negative 
             # but we need somehow do the interpolation
             # unpert_probs = F.softmax(logits[:, -1, :], dim=-1)
