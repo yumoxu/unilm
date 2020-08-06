@@ -42,7 +42,7 @@ $python $python_file \
   --length 50 \
   --gamma 1.0 \
   --num_iterations 10 \
-  --horizon_length 0 \
+  --horizon_length 1 \
   --num_samples 10 \
   --stepsize 0.04 \
   --kl_scale 0.01 \

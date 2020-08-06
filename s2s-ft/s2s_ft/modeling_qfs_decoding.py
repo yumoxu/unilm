@@ -1457,9 +1457,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             )
 
             hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
-            # FIXME double check detach
+            # TODO double check detach
             new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
-            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1)
             
             probs = F.softmax(logits, dim=-1)
 
