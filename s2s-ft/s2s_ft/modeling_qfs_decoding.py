@@ -1471,7 +1471,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # TODO check the use of history for t+2 
                 # Is it the right not updating the history via including t+1?
     
-                curr_probs = torch.unsqueeze(probs, dim=1)  # d_batch * 1 * d_vocab, the perturbed prob at the current position
+                # curr_probs = torch.unsqueeze(probs, dim=1)  # d_batch * 1 * d_vocab, the perturbed prob at the current position
+                curr_probs = probs
                 wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
                 inputs_embeds = torch.matmul(curr_probs, wte.weight.data)
 
@@ -1702,6 +1703,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 x_input_embeds = mask_embeddings
                 start_pos = next_pos 
             else:
+                print(f'input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
                 x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
                 start_pos = next_pos - 1
             
