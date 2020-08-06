@@ -1457,10 +1457,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 curr_ids=curr_ids
             )
 
-            hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
+            # hidden = new_encoded_layers[-1] # last hidden layer, for only the current input
+            hidden = new_encoded_layers[-1][:, -1, :]  # last hidden state of the last hidden layer
             print(f'hidden: {hidden.size()}')
             # TODO double check detach
-            new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
+            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
+            new_accumulated_hidden = accumulated_hidden + hidden.detach()
             
             probs = F.softmax(logits, dim=-1)
 
@@ -1481,10 +1483,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     prev_embedding=unpert_embedding, 
                     prev_encoded_layers=unpert_layers
                 )
-                next_hidden = next_layers[-1]
+                # next_hidden = next_layers[-1]
+                next_hidden = next_layers[-1][:, -1, :]  # # last hidden state of the last hidden layer
                 print(f'next_hidden: {next_hidden.size()}')
-
-                new_accumulated_hidden = new_accumulated_hidden + torch.sum(next_hidden, dim=1)
+                # new_accumulated_hidden = new_accumulated_hidden + torch.sum(next_hidden, dim=1)
+                new_accumulated_hidden = new_accumulated_hidden + next_hidden
+            
             elif self.horizon_length > 1:
                 raise ValueError('Cannot set horizon_length over 1 since it has not been implemented.')
 
