@@ -154,11 +154,6 @@ def add_pp_args(parser):
     parser.add_argument("--length", type=int, default=100)
     parser.add_argument("--stepsize", type=float, default=0.02)
     parser.add_argument("--temperature", type=float, default=1.0)
-    parser.add_argument("--top_k", type=int, default=10)
-    parser.add_argument(
-        "--sample", action="store_true",
-        help="Generate from end-of-text as prefix"
-    )
     parser.add_argument("--num_iterations", type=int, default=3)
     parser.add_argument("--grad_length", type=int, default=10000)
     parser.add_argument(
@@ -312,7 +307,8 @@ def load_unilm(args):
         max_position_embeddings=args.max_seq_length, pos_shift=args.pos_shift, 
         stepsize=args.stepsize, temperature=args.temperature, top_k=args.top_k,
         num_iterations=args.num_iterations, grad_length=args.grad_length, horizon_length=args.horizon_length, 
-        window_length=args.window_length, decay=args.decay, gamma=args.gamma, kl_scale=args.kl_scale,
+        window_length=args.window_length, decay=args.decay, 
+        gamma=args.gamma, gm_scale=args.gm_scale, kl_scale=args.kl_scale,
         verbosity=args.verbosity, device=args.device, fp16=args.fp16
     )
 

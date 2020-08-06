@@ -47,5 +47,4 @@ $python $python_file \
   --stepsize 0.04 \
   --kl_scale 0.01 \
   --gm_scale 0.95 \
-  --sample \
   --verbosity "verbose" \

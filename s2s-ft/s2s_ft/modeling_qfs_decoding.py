@@ -1050,7 +1050,6 @@ class MargeDiscriminator(nn.Module):
 
         group_score = self._pool(instc_score, instc_mask=slot_mask)  # d_batch * 1
         group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
-        print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
 
         if self.loss_idx >= 0:
             pred = instc_score[self.loss_idx]
@@ -1270,6 +1269,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                  window_length=0,
                  decay=False,
                  gamma=1.5,
+                 gm_scale=0.95,
                  kl_scale=0.01,
                  verbosity=REGULAR,
                  device='cuda',
@@ -1304,13 +1304,13 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         self.stepsize = stepsize
         self.temperature = temperature
-        self.top_k = top_k
         self.num_iterations = num_iterations
         self.grad_length = grad_length
         self.horizon_length = horizon_length
         self.window_length = window_length
         self.decay = decay
         self.gamma = gamma
+        self.gm_scale = gm_scale
         self.kl_scale = kl_scale
 
         self.device = device
@@ -1458,8 +1458,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             )
 
             # hidden = new_encoded_layers[-1] # last hidden layer, for only the current input
+            # use only the last token for accumulation
             hidden = new_encoded_layers[-1][:, -1, :]  # last hidden state of the last hidden layer
-            print(f'hidden: {hidden.size()}')
+            # print(f'hidden: {hidden.size()}')
             # TODO double check detach
             # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
             new_accumulated_hidden = accumulated_hidden + hidden.detach()
@@ -1484,8 +1485,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     prev_encoded_layers=unpert_layers
                 )
                 # next_hidden = next_layers[-1]
-                next_hidden = next_layers[-1][:, -1, :]  # # last hidden state of the last hidden layer
-                print(f'next_hidden: {next_hidden.size()}')
+                next_hidden = next_layers[-1][:, -1, :]  # last hidden state of the last hidden layer
+                # print(f'next_hidden: {next_hidden.size()}')
                 # new_accumulated_hidden = new_accumulated_hidden + torch.sum(next_hidden, dim=1)
                 new_accumulated_hidden = new_accumulated_hidden + next_hidden
             
@@ -1493,13 +1494,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 raise ValueError('Cannot set horizon_length over 1 since it has not been implemented.')
 
             # 1 is the perturbation for the present, horizon_length is for the future
-            # FIXME the summation can be 2 for each perturbation; make the norm right or use only the last token for accumulation
             cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
             discrim_loss, group_score, instc_score = discriminator(cand_rep)
             if self.verbosity_level >= VERY_VERBOSE:
+                print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
             loss += discrim_loss
-            
             loss_list.append(discrim_loss)
 
             kl_loss = 0.0
@@ -1651,23 +1651,23 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             return x_input_ids, start_pos
         
         x_input_ids, start_pos = _get_x_input_ids_and_start_pos()
-        print(f'start_pos: {start_pos}, next_pos: {next_pos}')
+        if self.verbosity_level >= DEBUG:
+            print(f'start_pos: {start_pos}, next_pos: {next_pos}')
         
         # prepare input
         curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
         curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
         curr_position_ids = position_ids[:, start_pos:next_pos + 1]
 
-        print(f'x_input_ids: {x_input_ids.size()}')
-        print(f'curr_token_type_ids: {curr_token_type_ids.size()}')
-        print(f'curr_position_ids: {curr_position_ids.size()}')
-        print(f'curr_attention_mask: {curr_attention_mask.size()}')
-        if mask_qkv is not None:
-            print(f'mask_qkv: {mask_qkv.size()}')
-        if perturbed_embedding is not None:
-            print(f'perturbed_embedding: {perturbed_embedding.size()}')
-        if perturbed_layers:
-            print(f'perturbed_layers: {perturbed_layers[0].size()} * {len(perturbed_layers)}')
+        if self.verbosity_level >= DEBUG:
+            print(f'x_input_ids: {x_input_ids.size()}')
+            print(f'curr token_type_ids, attention_mask, position_ids: {curr_token_type_ids.size()}')
+            if mask_qkv is not None:
+                print(f'mask_qkv: {mask_qkv.size()}')
+            if perturbed_embedding is not None:
+                print(f'perturbed_embedding: {perturbed_embedding.size()}')
+            if perturbed_layers:
+                print(f'perturbed_layers: {perturbed_layers[0].size()} * {len(perturbed_layers)}')
         
         new_embedding, new_encoded_layers, _ = self.bert(
                 input_ids=x_input_ids, token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, 
@@ -1709,14 +1709,16 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 x_input_embeds = mask_embeddings
                 start_pos = next_pos 
             else:
-                print(f'[Future perturb] input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
+                if self.verbosity_level >= DEBUG:
+                    print(f'[Future perturb] input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
                 x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
                 start_pos = next_pos - 1
             
             return x_input_embeds, start_pos
           
         x_input_embeds, start_pos = _get_x_input_embeds_and_start_pos()
-        print(f'start_pos: {start_pos}, next_pos: {next_pos}')
+        if self.verbosity_level >= DEBUG:
+            print(f'start_pos: {start_pos}, next_pos: {next_pos}')
         
         curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
         curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
@@ -1776,16 +1778,17 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
         curr_position_ids = position_ids[:, start_pos:next_pos + 1]
 
-        print(f'x_input_ids: {x_input_ids.size()}')
-        print(f'curr_token_type_ids: {curr_token_type_ids.size()}')
-        print(f'curr_position_ids: {curr_position_ids.size()}')
-        print(f'curr_attention_mask: {curr_attention_mask.size()}')
-        if mask_qkv is not None:
-            print(f'mask_qkv: {mask_qkv.size()}')
-        if prev_embedding is not None:
-            print(f'prev_embedding: {prev_embedding.size()}')
-        if prev_encoded_layers:
-            print(f'prev_encoded_layers: {prev_encoded_layers[0].size()} * {len(prev_encoded_layers)}')
+        if self.verbosity_level >= DEBUG:
+            print(f'x_input_ids: {x_input_ids.size()}')
+            print(f'curr_token_type_ids: {curr_token_type_ids.size()}')
+            print(f'curr_position_ids: {curr_position_ids.size()}')
+            print(f'curr_attention_mask: {curr_attention_mask.size()}')
+            if mask_qkv is not None:
+                print(f'mask_qkv: {mask_qkv.size()}')
+            if prev_embedding is not None:
+                print(f'prev_embedding: {prev_embedding.size()}')
+            if prev_encoded_layers:
+                print(f'prev_encoded_layers: {prev_encoded_layers[0].size()} * {len(prev_encoded_layers)}')
         
         new_embedding, new_encoded_layers, _ = self.bert(
                 input_ids=x_input_ids, token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, 
@@ -1838,7 +1841,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # TODO double check prev_embedding and prev_encoded_layers
         while next_pos < output_length:
             # first_token = (next_pos == input_length)
-            print(f'POS {next_pos}: generate original token')
+            if self.verbosity_level >= DEBUG:
+                print(f'POS {next_pos}: generate original token')
             step_params = {
                 'input_shape': input_shape,
                 'token_type_ids': token_type_ids,
@@ -1887,43 +1891,42 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'mask_ids': mask_ids,
                 'sos_ids': sos_ids,
             }
-            print(f'POS {next_pos}: perturb model')
+            if self.verbosity_level >= DEBUG:
+                print(f'POS {next_pos}: perturb model')
             pert_layers, pert_embedding, _, layer_grad_norms, embedding_grad_norm, _ = self.perturb_past(**perturb_params)
 
-            print(f'POS {next_pos}: foward pass with perturbed history')
+            if self.verbosity_level >= DEBUG:
+                print(f'POS {next_pos}: foward pass with perturbed history')
             step_params['prev_embedding'] = pert_embedding
             step_params['prev_encoded_layers'] = pert_layers
             pert_logits, pert_embedding, pert_layers = self.step(**step_params)
             # log_scores = pert_logits[:, -1, :] / self.temperature  # + SMALL_CONST
-            log_scores = pert_logits / self.temperature
-
-            # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
-            if forbid_word_mask is not None:
-                log_scores += (forbid_word_mask * -10000.0)
-            if self.min_len and (next_pos - input_length + 1 <= self.min_len):
-                log_scores[:, :, self.eos_id].fill_(-10000.0)
+            # log_scores = pert_logits / self.temperature
             # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
 
             # for unpert discrim_loss
             unpert_discrim_loss, _, _ = discriminator(torch.mean(new_last_hidden, dim=1))
             if self.verbosity_level >= VERY_VERBOSE:
                 print(f"unperturbed discrim loss: {unpert_discrim_loss.data.cpu().numpy()}")
-            
+
             # Fuse the modified model and original model
-            # FIXME original way is to fuse the two distributions (after softmax)
-            # here we don't do this since log scores are not ensured to be non-negative 
-            # but we need somehow do the interpolation
-            # unpert_probs = F.softmax(logits[:, -1, :], dim=-1)
-            # pert_probs = ((pert_probs ** gm_scale) * (unpert_probs ** (1 - gm_scale)))  # + SMALL_CONST
-            # pert_probs = top_k_filter(pert_probs, k=top_k, probs=True)  # + SMALL_CONST TODO: remove topk?
-            # # rescale
-            # if torch.sum(pert_probs) <= 1:
-            #     pert_probs = pert_probs / torch.sum(pert_probs)
+            # Original way is to fuse the two distributions (after softmax)
+            # Here beam search does not need softmax so we do this with logits
+            # A potential problem is logits are not ensured to be non-negative 
+            log_scores = ((pert_logits ** self.gm_scale) * (logits ** (1 - self.gm_scale)))
+
+            # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
+            if forbid_word_mask is not None:
+                log_scores += (forbid_word_mask * -10000.0)
+            if self.min_len and (next_pos - input_length + 1 <= self.min_len):
+                log_scores[:, :, self.eos_id].fill_(-10000.0)
 
             # get topK word ids and scores
             kk_scores, kk_ids = torch.topk(log_scores, k=K)
-            print(f'log_scores: {log_scores.size()}')
-            print(f'kk_scores: {kk_scores.size()}')
+            if self.verbosity_level >= DEBUG:
+                print(f'log_scores: {log_scores.size()}')
+                print(f'kk_scores: {kk_scores.size()}')
+            
             if len(total_scores) == 0:  # first token
                 k_ids = torch.reshape(kk_ids, [batch_size, K])
                 back_ptrs = torch.zeros(batch_size, K, dtype=torch.long)
@@ -1933,8 +1936,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     beam_masks[-1], [batch_size * K, 1, 1])
                 last_seq_scores = torch.reshape(
                     total_scores[-1], [batch_size * K, 1, 1])
-                print(f'last_eos: {last_eos.size()}')
-                print(f'last_seq_scores: {last_seq_scores.size()}')
+                if self.verbosity_level >= DEBUG:
+                    print(f'last_eos: {last_eos.size()}')
+                    print(f'last_seq_scores: {last_seq_scores.size()}')
                 kk_scores += last_eos * (-10000.0) + last_seq_scores
                 kk_scores = torch.reshape(kk_scores, [batch_size, K * K])
                 k_scores, k_ids = torch.topk(kk_scores, k=K)
