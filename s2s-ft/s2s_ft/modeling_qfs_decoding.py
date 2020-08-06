@@ -1262,7 +1262,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                  forbid_duplicate_ngrams=False, forbid_ignore_set=None, ngram_size=3, min_len=0, mode="s2s", pos_shift=False,
                  stepsize=0.01,
                  temperature=1.0,
-                 top_k=10,
                  num_iterations=3,
                  grad_length=10000,
                  horizon_length=1,
