@@ -1470,11 +1470,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # as input, use the last expected embedding (intead of actual embedding of a token)
                 # TODO check the use of history for t+2 
                 # Is it the right not updating the history via including t+1?
-    
-                # curr_probs = torch.unsqueeze(probs, dim=1)  # d_batch * 1 * d_vocab, the perturbed prob at the current position
-                curr_probs = probs
                 wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
-                inputs_embeds = torch.matmul(curr_probs, wte.weight.data)
+                inputs_embeds = torch.matmul(probs, wte.weight.data)
 
                 next_embedding, next_layers = self.step_for_future_perturb(**step_base_params,
                     input_shape=input_shape,
@@ -1494,11 +1491,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             if self.verbosity_level >= VERY_VERBOSE:
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
             loss += discrim_loss
-
-            # discrim_loss.retain_grad()
-            # group_score.retain_grad()
-            # cand_rep.retain_grad()
-            # new_accumulated_hidden.retain_grad()
 
             # print(f'curr_layer_perturbation 0: {curr_layer_perturbation[0].requires_grad}, {curr_layer_perturbation[0]}')
             # print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
@@ -1540,15 +1532,23 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             if self.verbosity_level >= VERBOSE:
                 print(' pplm_loss', (loss - kl_loss).data.cpu().numpy())
 
+            debug_grad = True
+            if debug_grad:
+                discrim_loss.retain_grad()
+                group_score.retain_grad()
+                cand_rep.retain_grad()
+                new_accumulated_hidden.retain_grad()
+
             # compute gradients
             loss.backward(retain_graph=True)
 
-            # print(f'Grad of discrim_loss: {discrim_loss.grad}')
-            # print(f'Grad of group_score: {group_score.grad}')
-            # print(f'Grad of cand_rep: {cand_rep.grad}')
-            # print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
-            # for index, p_ in enumerate(curr_layer_perturbation):
-            #     print(f'Grad of curr_layer_perturbation[{index}]: {p_.grad}')
+            if debug_grad:
+                print(f'Grad of discrim_loss: {discrim_loss.grad}')
+                print(f'Grad of group_score: {group_score.grad}')
+                print(f'Grad of cand_rep: {cand_rep.grad}')
+                print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
+                for index, p_ in enumerate(curr_layer_perturbation):
+                    print(f'Grad of curr_layer_perturbation[{index}]: {p_.grad}')
 
             # calculate gradient norms
             if layer_grad_norms is not None and embedding_grad_norm is not None:
@@ -1703,7 +1703,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 x_input_embeds = mask_embeddings
                 start_pos = next_pos 
             else:
-                print(f'input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
+                print(f'[Future perturb] input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
                 x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
                 start_pos = next_pos - 1
             
