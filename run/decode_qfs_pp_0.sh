@@ -48,3 +48,4 @@ $python $python_file \
   --kl_scale 0.01 \
   --gm_scale 0.95 \
   --sample \
+  --verbosity "verbose" \

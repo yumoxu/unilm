@@ -417,12 +417,12 @@ class BertSelfAttention(nn.Module):
         attention_scores = torch.matmul(
             query_layer / math.sqrt(self.attention_head_size), key_layer.transpose(-1, -2))
 
-        print('--------Self Attention--------')
-        print(f'query_layer: {query_layer.size()}')
-        print(f'key_layer: {key_layer.size()}')
-        print(f'value_layer: {value_layer.size()}')
-        print(f'attention_scores: {attention_scores.size()}')
-        print(f'attention_mask: {attention_mask.size()}')
+        # print('--------Self Attention--------')
+        # print(f'query_layer: {query_layer.size()}')
+        # print(f'key_layer: {key_layer.size()}')
+        # print(f'value_layer: {value_layer.size()}')
+        # print(f'attention_scores: {attention_scores.size()}')
+        # print(f'attention_mask: {attention_mask.size()}')
 
         if self.seg_emb is not None:
             seg_rep = self.seg_emb(seg_ids)
@@ -1246,13 +1246,14 @@ QUIET = 0
 REGULAR = 1
 VERBOSE = 2
 VERY_VERBOSE = 3
+DEBUG = 4
 VERBOSITY_LEVELS = {
     'quiet': QUIET,
     'regular': REGULAR,
     'verbose': VERBOSE,
     'very_verbose': VERY_VERBOSE,
+    'debug': DEBUG,
 }
-
 
 class BertForQueryFocusedDecoder(PreTrainedBertModel):
     """refer to BertForPreTraining
@@ -1457,6 +1458,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             )
 
             hidden = new_encoded_layers[-1]  # last hidden layer, for only the current input
+            print(f'hidden: {hidden.size()}')
             # TODO double check detach
             new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
             
@@ -1480,6 +1482,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     prev_encoded_layers=unpert_layers
                 )
                 next_hidden = next_layers[-1]
+                print(f'next_hidden: {next_hidden.size()}')
+
                 new_accumulated_hidden = new_accumulated_hidden + torch.sum(next_hidden, dim=1)
             elif self.horizon_length > 1:
                 raise ValueError('Cannot set horizon_length over 1 since it has not been implemented.')
@@ -1491,12 +1495,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             if self.verbosity_level >= VERY_VERBOSE:
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
             loss += discrim_loss
-
-            # print(f'curr_layer_perturbation 0: {curr_layer_perturbation[0].requires_grad}, {curr_layer_perturbation[0]}')
-            # print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
-            # print(f'group_score: {group_score.requires_grad}, {group_score}')
-            # print(f'discrim_loss: {discrim_loss.requires_grad}, {discrim_loss}')
-            # print(f'loss: {loss.requires_grad}, {loss}')
             
             loss_list.append(discrim_loss)
 
@@ -1532,17 +1530,21 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             if self.verbosity_level >= VERBOSE:
                 print(' pplm_loss', (loss - kl_loss).data.cpu().numpy())
 
-            debug_grad = True
-            if debug_grad:
+            if self.verbosity_level >= DEBUG:
                 discrim_loss.retain_grad()
                 group_score.retain_grad()
                 cand_rep.retain_grad()
                 new_accumulated_hidden.retain_grad()
+                # print(f'curr_layer_perturbation 0: {curr_layer_perturbation[0].requires_grad}, {curr_layer_perturbation[0]}')
+                # print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
+                # print(f'group_score: {group_score.requires_grad}, {group_score}')
+                # print(f'discrim_loss: {discrim_loss.requires_grad}, {discrim_loss}')
+                # print(f'loss: {loss.requires_grad}, {loss}')
 
             # compute gradients
             loss.backward(retain_graph=True)
 
-            if debug_grad:
+            if self.verbosity_level >= DEBUG:
                 print(f'Grad of discrim_loss: {discrim_loss.grad}')
                 print(f'Grad of group_score: {group_score.grad}')
                 print(f'Grad of cand_rep: {cand_rep.grad}')
@@ -1616,8 +1618,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 At the later generation steps, curr_ids are the output from the last step.
 
             We encode x_input_ids.
-            If the current step is the first step, x_input_ids is only a [MASK].
-            For later steps, we need encode the concatenation of [curr_ids, [MASK]].
+            If the current step is the first step, x_input_ids is only a [MASK], i.e., input_len=1
+            For later steps, we need encode the concatenation of (curr_ids, [MASK]), i.e., input_len=2
         
         """
         batch_size = input_shape[0]
