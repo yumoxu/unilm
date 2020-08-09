@@ -1327,7 +1327,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         return Variable(x, requires_grad=requires_grad, volatile=volatile)
 
     @torch.enable_grad()
-    def perturb_past(
+    def perturb_past_backup(
             self,
             discriminator,
             input_shape,
@@ -1407,7 +1407,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         curr_length = embedding_grad_accumulator.shape[-2]  # current history length (context + generation so far)
         print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
 
-        # TODO: double check window
         if curr_length > self.window_length and self.window_length > 0:
             d_batch, _, d_hidden = unpert_embedding.size()
             ones_key_val_shape = (d_batch, self.window_length, d_hidden)
@@ -1602,6 +1601,296 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         embedding_grad_accumulator = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
         pert_embedding = unpert_embedding + embedding_grad_accumulator
+
+        return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
+
+        @torch.enable_grad()
+    
+    @torch.enable_grad()
+    def perturb_past(
+            self,
+            discriminator,
+            input_shape,
+            token_type_ids,
+            position_ids,
+            attention_mask,
+            task_idx,
+            mask_qkv,
+            curr_ids,
+            next_pos,
+            stepsize,
+            prev_embedding=None,
+            prev_encoded_layers=None,
+            new_embedding=None,
+            new_encoded_layers=None,
+            unpert_logits=None,
+            accumulated_hidden=None,
+            layer_grad_norms=None,
+            embedding_grad_norm=None,
+            mask_ids=None,
+            sos_ids=None
+    ):
+        """
+            prev_embedding and prev_encoded_layers are obtained from a prev forward pass (FP).
+            
+            prev_embedding: tensor:d_batch * seq_len * d_hidden
+            prev_encoded_layers: list of tensors:d_batch * seq_len * d_hidden
+
+            seq_len is the prev seq len, including the input len and the generation len.
+
+            new_embedding and new_encoded_layers are obtained from the current forward pass (FP). 
+
+            We perturb the given unpert_embedding and unpert_layers, then run the forward pass again (Perturbed FP).
+            We perturb the hidden states [:-1] and use mask_ids in the Perturbed FP.
+
+        """
+        def build_unpert_past():
+            """
+                In the first perturbation, new_* cover {context, [MASK]}, and prev_* are not provided.
+                Therefore, we use new_*[:-1] as unpert_*.
+                
+                In the later perturbation, prev_* are provided, and we use them as unpert_*.
+            """
+            assert not self.pos_shift
+            past = {}
+            unperturb_past = {}
+            
+            if prev_embedding is None:  # is the first, new_embedding is context + MASK; perturb the context
+                past['embedding'] = new_embedding[:, :-1, :]
+                unperturb_past['embedding'] = new_embedding[:, :-1, :]
+            else:
+                past['embedding'] = prev_embedding
+                unperturb_past['embedding'] = torch.cat((prev_embedding, new_embedding[:, :-1, :]), dim=1)
+            
+            if prev_encoded_layers is None:
+                past['layers'] = [x[:, :-1, :] for x in new_encoded_layers]
+                unperturb_past['layers'] = [x[:, :-1, :] for x in new_encoded_layers]
+            else:
+                past['layers'] = prev_encoded_layers
+                unperturb_past['layers'] = [
+                    torch.cat((prev_encoded_layers[layer_idx], new_encoded_layers[layer_idx][:, :-1, :]), dim=1)
+                    for layer_idx in range(len(prev_encoded_layers))]
+            
+            return past, unperturb_past
+
+        past, unperturb_past = build_unpert_past()
+
+        layer_grad_accumulator = [
+            (np.zeros(p.shape).astype("float32"))
+            for p in past['layers'][:-1]
+        ]
+        embedding_grad_accumulator = np.zeros(past['embedding'].shape).astype("float32")
+
+        # if accumulated_hidden is None:
+            # accumulated_hidden = 0
+        accumulated_hidden = torch.sum(past['layers'][-1], dim=1)  # sum of the current history
+        # print(f'accumulated_hidden: {accumulated_hidden}')
+
+        if self.decay:
+            decay_mask = torch.arange(0., 1.0 + SMALL_CONST, 1.0 / (self.window_length))[1:]
+        else:
+            decay_mask = 1.0
+
+        # Generate a mask is gradient perturbated is based on a past window
+        curr_length = embedding_grad_accumulator.shape[-2]  # current history length (context + generation so far)
+        print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
+
+        if curr_length > self.window_length and self.window_length > 0:
+            d_batch, _, d_hidden = past['embedding'].size()
+            ones_key_val_shape = (d_batch, self.window_length, d_hidden)
+            zeros_key_val_shape = (d_batch, curr_length - self.window_length, d_hidden)
+            
+            ones_mask = torch.ones(ones_key_val_shape)
+            # ones_mask = decay_mask * ones_mask.permute(0, 1, 2, 4, 3)
+            ones_mask = decay_mask * ones_mask.permute(0, 2, 1)
+            ones_mask = ones_mask.permute(0, 2, 1)
+
+            window_mask = torch.cat((ones_mask, torch.zeros(zeros_key_val_shape)), dim=-2).to(self.device)
+        else:
+            # window_mask = torch.ones_like(past[0]).to(device)
+            window_mask = torch.ones_like(past['embedding']).to(self.device)
+
+        # accumulate perturbations for num_iterations
+        loss_per_iter = []
+        new_accumulated_hidden = None
+        for i in range(self.num_iterations):
+            if self.verbosity_level >= VERBOSE:
+                print(f'\tPerturb Iter {next_pos}.{i + 1}')
+            
+            curr_layer_perturbation = [self.to_var(torch.from_numpy(p_), requires_grad=True)
+                for p_ in layer_grad_accumulator]
+            curr_embedding_perturbation = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
+
+            # Compute hidden using perturbed past
+            perturbed_layers = list(map(add, past['layers'][:-1], curr_layer_perturbation))
+            perturbed_layers.append(past['layers'][-1])
+            pertubed_embedding = past['embedding'] + curr_embedding_perturbation
+
+            step_base_params = {
+                'token_type_ids': token_type_ids,
+                'position_ids': position_ids,
+                'attention_mask': attention_mask,
+                'task_idx': task_idx,
+                'mask_qkv': mask_qkv,
+                'next_pos': next_pos,
+                'mask_ids': mask_ids,
+                'sos_ids': sos_ids,
+            }
+            logits, new_embedding, new_encoded_layers = self.step_for_current_perturb(**step_base_params,
+                input_shape=input_shape,
+                perturbed_embedding=pertubed_embedding, 
+                perturbed_layers=perturbed_layers,
+                curr_ids=curr_ids
+            )
+
+            # hidden = new_encoded_layers[-1] # last hidden layer, for only the current input
+            # use only the last token for accumulation
+            # TODO: another option is to use the first token, instead of using [MASK]
+            hidden = new_encoded_layers[-1][:, -1, :]  # last hidden state of the last hidden layer
+            # print(f'hidden: {hidden.size()}')
+            # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
+            new_accumulated_hidden = accumulated_hidden + hidden.detach()
+            
+            probs = F.softmax(logits, dim=-1)
+
+            loss = 0.0
+            loss_list = []
+
+            if self.horizon_length == 1:
+                # perturb again for the future
+                # as input, use the last expected embedding (intead of actual embedding of a token)
+                # TODO check the use of history for t+2 
+                # Is it the right not updating the history via including t+1?
+                wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
+                inputs_embeds = torch.matmul(probs, wte.weight.data)
+
+                next_embedding, next_layers = self.step_for_future_perturb(**step_base_params,
+                    input_shape=input_shape,
+                    input_embeds=inputs_embeds,
+                    prev_embedding=unperturb_past['embedding'], 
+                    prev_encoded_layers=unperturb_past['layers']
+                )
+                # next_hidden = next_layers[-1]
+                # TODO: another option is to use the first token, instead of using [MASK]
+                next_hidden = next_layers[-1][:, -1, :]  # last hidden state of the last hidden layer
+                # print(f'next_hidden: {next_hidden.size()}')
+                # new_accumulated_hidden = new_accumulated_hidden + torch.sum(next_hidden, dim=1)
+                new_accumulated_hidden = new_accumulated_hidden + next_hidden
+            
+            elif self.horizon_length > 1:
+                raise ValueError('Cannot set horizon_length over 1 since it has not been implemented.')
+
+            # 1 is the perturbation for the present, horizon_length is for the future
+            cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
+            discrim_loss, group_score, instc_score = discriminator(cand_rep)
+            if self.verbosity_level >= VERY_VERBOSE:
+                print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
+                print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
+            loss += discrim_loss
+            loss_list.append(discrim_loss)
+
+            kl_loss = 0.0
+            if self.kl_scale > 0.0:
+                # unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
+                unpert_probs = F.softmax(unpert_logits, dim=-1)
+                # if self.fp16:
+                #     unpert_correction = SMALL_CONST * (unpert_probs <= SMALL_CONST).half().to(self.device).detach()
+                #     correction = SMALL_CONST * (probs <= SMALL_CONST).half().to(self.device).detach()
+                # else:
+                #     unpert_probs = SMALL_CONST * (unpert_probs <= SMALL_CONST).float().to(self.device).detach()
+                #     correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(self.device).detach()
+
+                # unpert_probs = (unpert_probs + unpert_correction.detach())
+                # corrected_probs = probs + correction.detach()
+                # print(f'corrected_probs: {corrected_probs}')
+                
+                # print(f'probs: {probs}')
+                # print(f'unpert_probs: {unpert_probs}')
+                # div = corrected_probs * (corrected_probs / unpert_probs).log()
+                # TODO double check KL loss; it was minus sometimes
+                kl_loss_layer = torch.nn.KLDivLoss(reduction='sum')
+                # div = kl_loss_layer(probs, unpert_probs)
+                div = kl_loss_layer(logits, unpert_probs)
+                kl_loss = self.kl_scale * div
+
+                if self.verbosity_level >= VERY_VERBOSE:
+                    print(f'kl_loss: {kl_loss.data.cpu().numpy()}')
+                loss += kl_loss
+
+            loss_per_iter.append(loss.data.cpu().numpy())
+            if self.verbosity_level >= VERBOSE:
+                print(' pplm_loss', (loss - kl_loss).data.cpu().numpy())
+
+            if self.verbosity_level >= DEBUG:
+                discrim_loss.retain_grad()
+                group_score.retain_grad()
+                cand_rep.retain_grad()
+                new_accumulated_hidden.retain_grad()
+                # print(f'curr_layer_perturbation 0: {curr_layer_perturbation[0].requires_grad}, {curr_layer_perturbation[0]}')
+                # print(f'cand_rep: {cand_rep.requires_grad}, {cand_rep}')
+                # print(f'group_score: {group_score.requires_grad}, {group_score}')
+                # print(f'discrim_loss: {discrim_loss.requires_grad}, {discrim_loss}')
+                # print(f'loss: {loss.requires_grad}, {loss}')
+
+            # compute gradients
+            loss.backward(retain_graph=True)
+
+            if self.verbosity_level >= DEBUG:
+                print(f'Grad of discrim_loss: {discrim_loss.grad}')
+                print(f'Grad of group_score: {group_score.grad}')
+                print(f'Grad of cand_rep: {cand_rep.grad}')
+                print(f'Grad of new_accumulated_hidden: {new_accumulated_hidden.grad}')
+                for index, p_ in enumerate(curr_layer_perturbation):
+                    print(f'Grad of curr_layer_perturbation[{index}]: {p_.grad}')
+
+            # calculate gradient norms
+            if layer_grad_norms is not None and embedding_grad_norm is not None:
+                layer_grad_norms = [
+                    torch.max(layer_grad_norms[index], torch.norm(p_.grad * window_mask))
+                    for index, p_ in enumerate(curr_layer_perturbation)
+                ]
+                embedding_grad_norm = torch.max(embedding_grad_norm, torch.norm(curr_embedding_perturbation.grad * window_mask))
+            else:
+                layer_grad_norms = [
+                    (torch.norm(p_.grad * window_mask) + SMALL_CONST)
+                    for index, p_ in enumerate(curr_layer_perturbation)
+                ]
+                embedding_grad_norm = (torch.norm(curr_embedding_perturbation.grad * window_mask) + SMALL_CONST)
+
+            def finalize_grad(var, norm):
+                return -stepsize * (var.grad * window_mask / norm ** self.gamma).data.cpu().numpy()
+
+            layer_grad = [
+                finalize_grad(p_, norm=layer_grad_norms[index])
+                for index, p_ in enumerate(curr_layer_perturbation)
+            ]
+            embedding_grad = finalize_grad(curr_embedding_perturbation, norm=embedding_grad_norm)
+
+            # accumulate gradient
+            layer_grad_accumulator = list(map(add, layer_grad, layer_grad_accumulator))
+            embedding_grad_accumulator = embedding_grad + embedding_grad_accumulator
+
+            # reset gradients, just to make sure
+            for p_ in curr_layer_perturbation:
+                p_.grad.data.zero_()
+            curr_embedding_perturbation.grad.data.zero_()
+
+            # remove hidden states from the graph
+            new_past_layers = []
+            for p_ in past['layers']:
+                new_past_layers.append(p_.detach())
+            past['layers'] = new_past_layers
+            past['embedding'] = past['embedding'].detach()
+
+        # apply the accumulated perturbations to the past
+        layer_grad_accumulator = [self.to_var(torch.from_numpy(p_), requires_grad=True)
+            for p_ in layer_grad_accumulator]
+        pert_layers = list(map(add, past['layers'][:-1], layer_grad_accumulator))
+        pert_layers.append(past['layers'][-1])  # the last layer has no gradient
+
+        embedding_grad_accumulator = self.to_var(torch.from_numpy(embedding_grad_accumulator), 
+            requires_grad=True)
+        pert_embedding = past['embedding'] + embedding_grad_accumulator
 
         return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
 
@@ -1857,16 +2146,43 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'sos_ids': sos_ids,
             }
             logits, new_embedding, new_encoded_layers = self.step(**step_params)
-            new_last_hidden = new_encoded_layers[-1]
+            
+            def get_unpert_last_hidden():
+                """
+                    Return unpert_last_hidden: the layer of all hidden states so far.
+                """
+                # TODO test needed
+                if next_pos == input_length: # the first step
+                    unpert_last_hidden = new_encoded_layers[-1]
+                else:
+                    assert prev_encoded_layers is not None
+                    unpert_last_hidden = torch.cat(
+                        (prev_encoded_layers[-1], new_encoded_layers[-1]), dim=1)
+                return unpert_last_hidden
+            
+            unpert_last_hidden = get_unpert_last_hidden()
 
              # check if we are abowe grad max length
             if next_pos >= self.grad_length:
                 current_stepsize = self.stepsize * 0
             else:
                 current_stepsize = self.stepsize
-
-            accumulated_hidden = new_last_hidden[:, :-1, :]  # exclude the current position
-            accumulated_hidden = torch.sum(accumulated_hidden, dim=1)  # sum of the current history
+            
+            def get_accumulated_hidden():
+                """
+                    Return accumulated_hidden: summation of the past hidden states.
+                """
+                # TODO test needed
+                if next_pos == input_length: # the first step
+                    curr_len = 1   # (the last [MASK])
+                else:
+                    curr_len = 2  # (curr_id, [MASK])
+                    
+                accumulated_hidden = unpert_last_hidden[:, :-curr_len, :]  # exclude the current position
+                accumulated_hidden = torch.sum(accumulated_hidden, dim=1)  # sum of the current history
+                return accumulated_hidden
+            
+            accumulated_hidden = get_accumulated_hidden()
 
             perturb_params = {
                 'discriminator': discriminator,
@@ -1904,18 +2220,16 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
 
             # for unpert discrim_loss
-            unpert_discrim_loss, _, _ = discriminator(torch.mean(new_last_hidden, dim=1))
+            # TODO: another option is to remove the last [MASK]: unpert_last_hidden[:, :-1, :]
+            unpert_discrim_loss, _, _ = discriminator(torch.mean(unpert_last_hidden, dim=1))
             if self.verbosity_level >= VERY_VERBOSE:
                 print(f"unperturbed discrim loss: {unpert_discrim_loss.data.cpu().numpy()}")
 
             # Fuse the modified model and original model
             # Original way is to fuse the two distributions (after softmax)
             # Here beam search does not need softmax so we do this with logits
-            # A potential problem is logits are not ensured to be non-negative 
             # log_scores = (pert_logits ** self.gm_scale) * (logits ** (1 - self.gm_scale))
             log_scores = self.gm_scale * pert_logits + (1 - self.gm_scale) * logits
-            # print(f'pert_logits: {pert_logits.size()}, logits: {logits.size()}')
-            # log_scores = (pert_logits.data.cpu() ** self.gm_scale) * (logits.data.cpu() ** (1 - self.gm_scale))
 
             # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
             if forbid_word_mask is not None:
