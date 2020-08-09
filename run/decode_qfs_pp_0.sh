@@ -29,7 +29,7 @@ $python $python_file \
   --model_ckpt ${UNILM_CKPT} \
   --max_seq_length 768 \
   --max_tgt_length 300 \
-  --batch_size 1 \
+  --batch_size 16 \
   --beam_size 5 \
   --length_penalty 0.9 \
   --forbid_duplicate_ngrams \
