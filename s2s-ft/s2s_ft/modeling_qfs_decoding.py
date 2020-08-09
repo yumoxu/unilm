@@ -1682,7 +1682,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         # if accumulated_hidden is None:
             # accumulated_hidden = 0
-        accumulated_hidden = torch.sum(past['layers'][-1], dim=1)  # sum of the current history
+        # accumulated_hidden = torch.sum(past['layers'][-1], dim=1)  # sum of the current history
         # print(f'accumulated_hidden: {accumulated_hidden}')
 
         if self.decay:
@@ -2013,6 +2013,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
         curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
         curr_position_ids = position_ids[:, start_pos:next_pos + 1]
+        print(f'[Future perturb] curr_attention_mask: {curr_attention_mask.size()}
+        print(f'[Future perturb] x_input_embeds: {x_input_embeds.size()}
+        print(f'[Future perturb] prev_embedding: {prev_embedding.size()}
         new_embedding, new_encoded_layers, _ = self.bert(
                 input_embeds=x_input_embeds, 
                 token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, attention_mask=curr_attention_mask,
