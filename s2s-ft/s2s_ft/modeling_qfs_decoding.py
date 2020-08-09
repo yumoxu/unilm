@@ -1447,7 +1447,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # use only the last token for accumulation
             hidden = new_encoded_layers[-1][:, -1, :]  # last hidden state of the last hidden layer
             # print(f'hidden: {hidden.size()}')
-            # TODO double check detach
             # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
             new_accumulated_hidden = accumulated_hidden + hidden.detach()
             
@@ -1459,7 +1458,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             if self.horizon_length == 1:
                 # perturb again for the future
                 # as input, use the last expected embedding (intead of actual embedding of a token)
-                # TODO check the use of history for t+2 
                 # Is it the right not updating the history via including t+1?
                 wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
                 inputs_embeds = torch.matmul(probs, wte.weight.data)
@@ -1506,7 +1504,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # print(f'probs: {probs}')
                 # print(f'unpert_probs: {unpert_probs}')
                 # div = corrected_probs * (corrected_probs / unpert_probs).log()
-                # TODO double check KL loss; it was minus sometimes
                 kl_loss_layer = torch.nn.KLDivLoss(reduction='sum')
                 # div = kl_loss_layer(probs, unpert_probs)
                 div = kl_loss_layer(logits, unpert_probs)
@@ -1762,21 +1759,17 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             loss = 0.0
             loss_list = []
 
-            if self.horizon_length == 1:
-                # obtain future hideen states
+            if self.horizon_length == 1:  # obtain future hideen states
                 # as input, use the last expected embedding (intead of actual embedding of a token)
-                # TODO check the use of history for t+2 
                 wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
                 inputs_embeds = torch.matmul(probs, wte.weight.data)
 
-                next_embedding, next_layers = self.step_for_future_perturb(**step_base_params,
+                next_embedding, next_layers = self.step_for_future_hidden(**step_base_params,
                     input_shape=input_shape,
                     input_embeds=inputs_embeds,
-                    prev_embedding=unperturb_past['embedding'], 
-                    prev_encoded_layers=unperturb_past['layers']
+                    unperturb_past=unperturb_past
                 )
-                # next_hidden = next_layers[-1]
-                # TODO: another option is to use the first token, instead of using [MASK]
+                # TODO: implement another option is to use the first token, instead of using [MASK]
                 next_hidden = next_layers[-1][:, -1, :]  # last hidden state of the last hidden layer
                 # print(f'next_hidden: {next_hidden.size()}')
                 # new_accumulated_hidden = new_accumulated_hidden + torch.sum(next_hidden, dim=1)
@@ -1919,9 +1912,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 At the later generation steps, curr_ids are the output from the last step.
 
             We encode x_input_ids.
-            If the current step is the first step, x_input_ids is only a [MASK], i.e., input_len=1
-            For later steps, we need encode the concatenation of (curr_ids, [MASK]), i.e., input_len=2
-        
+                If the current step is the first step, x_input_ids is only a [MASK], i.e., input_len=1
+                For later steps, we need encode the concatenation of (curr_ids, [MASK]), i.e., input_len=2
         """
         batch_size = input_shape[0]
         input_length = input_shape[1]
@@ -1982,42 +1974,32 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         return log_scores, new_embedding, new_encoded_layers
     
     @torch.enable_grad()
-    def step_for_future_perturb(self, 
+    def step_for_future_hidden(self, 
             input_shape, next_pos, 
             input_embeds, token_type_ids, position_ids, attention_mask, 
+            unperturb_past,
             task_idx=None, mask_qkv=None,
-            prev_embedding=None, 
-            prev_encoded_layers=None, 
             mask_ids=None,
             sos_ids=None):
         """
             For future hidden states in plug and play.
+
         """
         input_length = input_shape[1]
 
-        def _get_x_input_embeds_and_start_pos():
+        def _get_x_input_embeds():
             """
                 start_pos: the start pos for the current input
             """
             assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
             mask_embeddings = self.bert.embeddings.word_embeddings(mask_ids)
-
-            # if next_pos == input_length:
-            #     x_input_embeds = mask_embeddings
-            #     start_pos = next_pos 
-            # else:
-            #     if self.verbosity_level >= DEBUG:
-            #         print(f'[Future perturb] input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
-            #     x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
-            #     start_pos = next_pos - 1
             if self.verbosity_level >= DEBUG:
                 print(f'[Future perturb] input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
             x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
-            start_pos = next_pos - 1
             
-            return x_input_embeds, start_pos
+            return x_input_embeds
           
-        x_input_embeds, start_pos = _get_x_input_embeds_and_start_pos()
+        x_input_embeds = _get_x_input_embeds_and_start_pos()
         if self.verbosity_level >= DEBUG:
             print(f'start_pos: {start_pos}, next_pos: {next_pos}')
         
@@ -2029,13 +2011,13 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         curr_position_ids = position_ids[:, next_pos:next_pos + 2]
         print(f'[Future perturb] curr_attention_mask: {curr_attention_mask.size()}')
         print(f'[Future perturb] x_input_embeds: {x_input_embeds.size()}')
-        print(f'[Future perturb] prev_embedding: {prev_embedding.size()}')
+        print(f'[Future perturb] unperturb_past.embedding: {unperturb_past['embedding'].size()}')
         new_embedding, new_encoded_layers, _ = self.bert(
                 input_embeds=x_input_embeds, 
                 token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, attention_mask=curr_attention_mask,
                 output_all_encoded_layers=True, 
-                prev_embedding=prev_embedding, 
-                prev_encoded_layers=prev_encoded_layers, 
+                prev_embedding=unperturb_past['embedding'], 
+                prev_encoded_layers=unperturb_past['layers'], 
                 mask_qkv=mask_qkv)
         
         return new_embedding, new_encoded_layers
@@ -2051,9 +2033,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         """
             We run this function twice in each generation step: once before and once after perturbation.
 
-            One special case is the first step, when next_pos == input_length.
+            One special case is at the first step, when next_pos == input_length.
             Before perturbation, prev_embedding and prev_encoded_layers are both None;
-            After perturbation, prev_embedding and prev_encoded_layers are provided as perturbed history.
+            After perturbation, prev_embedding and prev_encoded_layers are provided from perturbed history,
+            we only need to encode [MASK] again.
 
         """
         batch_size = input_shape[0]
@@ -2146,7 +2129,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         loss_in_time = []
 
-        # TODO double check prev_embedding and prev_encoded_layers
         while next_pos < output_length:
             is_first = (prev_embedding is None)  # TODO check if moving forward this line matters 
             # first_token = (next_pos == input_length)
@@ -2252,7 +2234,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
 
             # for unpert discrim_loss
-            # TODO: try another option: remove the last [MASK]: unpert_last_hidden[:, :-1, :]
+            # TODO: implement another option: remove the last [MASK]: unpert_last_hidden[:, :-1, :]
             unpert_discrim_loss, _, _ = discriminator(torch.mean(unpert_last_hidden, dim=1))
             if self.verbosity_level >= VERY_VERBOSE:
                 print(f"unperturbed discrim loss: {unpert_discrim_loss.data.cpu().numpy()}")
