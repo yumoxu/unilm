@@ -2010,9 +2010,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         if self.verbosity_level >= DEBUG:
             print(f'start_pos: {start_pos}, next_pos: {next_pos}')
         
-        curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
-        curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
-        curr_position_ids = position_ids[:, start_pos:next_pos + 1]
+        # curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
+        # curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
+        # curr_position_ids = position_ids[:, start_pos:next_pos + 1]
+        curr_token_type_ids = token_type_ids[:, next_pos:next_pos + 2]
+        curr_attention_mask = attention_mask[:, next_pos:next_pos + 2, :next_pos + 2]
+        curr_position_ids = position_ids[:, next_pos:next_pos + 2]
         print(f'[Future perturb] curr_attention_mask: {curr_attention_mask.size()}')
         print(f'[Future perturb] x_input_embeds: {x_input_embeds.size()}')
         print(f'[Future perturb] prev_embedding: {prev_embedding.size()}')
