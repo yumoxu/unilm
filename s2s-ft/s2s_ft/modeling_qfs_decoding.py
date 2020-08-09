@@ -1351,19 +1351,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             sos_ids=None
     ):
         """
-            prev_embedding and prev_encoded_layers are obtained from a prev forward pass (FP).
-            
-            prev_embedding: tensor:d_batch * seq_len * d_hidden
-            prev_encoded_layers: list of tensors:d_batch * seq_len * d_hidden
-
-            seq_len is the prev seq len, including the input len and the generation len.
-
-            new_embedding and new_encoded_layers are obtained from the current forward pass (FP). 
-
-            
-            We perturb the given unpert_embedding and unpert_layers, then run the forward pass again (Perturbed FP).
-            We perturb the hidden states [:-1] and use mask_ids in the Perturbed FP.
-
+            This is an archived version that confuses the use of past and unpert_past.
         """
         def build_unpert_past():
             """
@@ -1605,7 +1593,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
 
-    
     @torch.enable_grad()
     def perturb_past(
             self,
@@ -1882,16 +1869,18 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             past['embedding'] = past['embedding'].detach()
 
         # apply the accumulated perturbations to the past
+        pert_past= {}
+
         layer_grad_accumulator = [self.to_var(torch.from_numpy(p_), requires_grad=True)
             for p_ in layer_grad_accumulator]
-        pert_layers = list(map(add, past['layers'][:-1], layer_grad_accumulator))
-        pert_layers.append(past['layers'][-1])  # the last layer has no gradient
+        pert_past['layers'] = list(map(add, past['layers'][:-1], layer_grad_accumulator))
+        pert_past['layers'].append(past['layers'][-1])  # the last layer has no gradient
 
         embedding_grad_accumulator = self.to_var(torch.from_numpy(embedding_grad_accumulator), 
             requires_grad=True)
-        pert_embedding = past['embedding'] + embedding_grad_accumulator
+        pert_past['embedding'] = past['embedding'] + embedding_grad_accumulator
 
-        return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
+        return pert_past, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
 
     @torch.enable_grad()
     def step_for_current_perturb(self, 
@@ -2110,8 +2099,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         output_shape = list(token_type_ids.size())
         output_length = output_shape[1]
 
-        output_ids = []
-        prev_embedding = None  # embeds for existing tokens  (including source tokens and generated tokens)
+        prev_embedding = None  # embeds for existing tokens (including source tokens and generated tokens)
         prev_encoded_layers = None  # hidden states at each layer for existing tokens
         curr_ids = input_ids
         mask_ids = input_ids.new(batch_size, 1).fill_(self.mask_word_id)
@@ -2134,12 +2122,16 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         layer_grad_norms = None
         embedding_grad_norm = None
+        
+        loss_in_time = []
 
         # TODO double check prev_embedding and prev_encoded_layers
         while next_pos < output_length:
+            is_first = (prev_embedding is None)  # TODO check if moving forward this line matters 
             # first_token = (next_pos == input_length)
             if self.verbosity_level >= DEBUG:
                 print(f'POS {next_pos}: generate original token')
+            
             step_params = {
                 'input_shape': input_shape,
                 'token_type_ids': token_type_ids,
@@ -2154,14 +2146,16 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'mask_ids': mask_ids,
                 'sos_ids': sos_ids,
             }
-            logits, new_embedding, new_encoded_layers = self.step(**step_params)
+            # After beam search, new_embedding and new_encoded_layers will be used to 
+            # update prev_embedding and prev_encoded_layers
+            unpert_logits, new_embedding, new_encoded_layers = self.step(**step_params)
             
-            def get_unpert_last_hidden():
+            def get_unpert_last_hidden(new_encoded_layers, prev_encoded_layers, is_first):
                 """
-                    Return unpert_last_hidden: the layer of all hidden states so far.
+                    Get unpert_last_hidden: the layer of all hidden states so far.
                 """
-                # TODO test needed
-                if next_pos == input_length: # the first step
+                # if next_pos == input_length: # the first step
+                if is_first:
                     unpert_last_hidden = new_encoded_layers[-1]
                 else:
                     assert prev_encoded_layers is not None
@@ -2169,29 +2163,36 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                         (prev_encoded_layers[-1], new_encoded_layers[-1]), dim=1)
                 return unpert_last_hidden
             
-            unpert_last_hidden = get_unpert_last_hidden()
-
-             # check if we are abowe grad max length
-            if next_pos >= self.grad_length:
-                current_stepsize = self.stepsize * 0
-            else:
-                current_stepsize = self.stepsize
-            
-            def get_accumulated_hidden():
+            def get_accumulated_hidden(unpert_last_hidden, is_first):
                 """
-                    Return accumulated_hidden: summation of the past hidden states.
-                """
-                # TODO test needed
-                if next_pos == input_length: # the first step
-                    curr_len = 1   # (the last [MASK])
-                else:
-                    curr_len = 2  # (curr_id, [MASK])
+                    Get accumulated_hidden: summation of the past hidden states.
                     
+                    We extract accumulated_hidden from unpert_last_hidden, 
+                    i.e., the layer of all hidden states so far.
+
+                    At the first step, the last representation should be excluded, i.e., for [MASK].
+                    
+                    In the rest steps, the last two representations should be excluded,
+                    i.e., for the last generation token and [MASK].
+                """
+                # if next_pos == input_length:
+                #     curr_len = 1
+                # else:
+                #     curr_len = 2
+                curr_len = 1 if is_first else 2
                 accumulated_hidden = unpert_last_hidden[:, :-curr_len, :]  # exclude the current position
                 accumulated_hidden = torch.sum(accumulated_hidden, dim=1)  # sum of the current history
                 return accumulated_hidden
             
-            accumulated_hidden = get_accumulated_hidden()
+            unpert_last_hidden = get_unpert_last_hidden(new_encoded_layers, 
+                prev_encoded_layers, is_first=is_first)
+            accumulated_hidden = get_accumulated_hidden(unpert_last_hidden, is_first=is_first)
+
+            # check if we are abowe grad max length
+            if next_pos >= self.grad_length:
+                current_stepsize = self.stepsize * 0
+            else:
+                current_stepsize = self.stepsize
 
             perturb_params = {
                 'discriminator': discriminator,
@@ -2208,7 +2209,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 'prev_encoded_layers': prev_encoded_layers,
                 'new_embedding': new_embedding,
                 'new_encoded_layers': new_encoded_layers,
-                'unpert_logits': logits,
+                'unpert_logits': unpert_logits,
                 'accumulated_hidden': accumulated_hidden,
                 'layer_grad_norms': layer_grad_norms,
                 'embedding_grad_norm': embedding_grad_norm,
@@ -2217,12 +2218,13 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             }
             if self.verbosity_level >= DEBUG:
                 print(f'POS {next_pos}: perturb model')
-            pert_layers, pert_embedding, _, layer_grad_norms, embedding_grad_norm, _ = self.perturb_past(**perturb_params)
+            pert_past, _, layer_grad_norms, embedding_grad_norm, loss_this_iter = self.perturb_past(**perturb_params)
+            loss_in_time.append(loss_this_iter)
 
             if self.verbosity_level >= DEBUG:
                 print(f'POS {next_pos}: foward pass with perturbed history')
-            step_params['prev_embedding'] = pert_embedding
-            step_params['prev_encoded_layers'] = pert_layers
+            step_params['prev_embedding'] = pert_past['embedding']
+            step_params['prev_encoded_layers'] = pert_past['layers']
             pert_logits, pert_embedding, pert_layers = self.step(**step_params)
             # log_scores = pert_logits[:, -1, :] / self.temperature  # + SMALL_CONST
             # log_scores = pert_logits / self.temperature
@@ -2238,7 +2240,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # Original way is to fuse the two distributions (after softmax)
             # Here beam search does not need softmax so we do this with logits
             # log_scores = (pert_logits ** self.gm_scale) * (logits ** (1 - self.gm_scale))
-            log_scores = self.gm_scale * pert_logits + (1 - self.gm_scale) * logits
+            log_scores = self.gm_scale * pert_logits + (1 - self.gm_scale) * unpert_logits
 
             # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
             if forbid_word_mask is not None:
@@ -2299,8 +2301,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 y = torch.gather(x, 1, ids)
                 y = torch.reshape(y, x_shape)
                 return y
-
-            is_first = (prev_embedding is None)
 
             if self.pos_shift:
                 if prev_embedding is None:
