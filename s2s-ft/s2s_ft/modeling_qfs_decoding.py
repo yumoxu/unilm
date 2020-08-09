@@ -1604,7 +1604,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         return pert_layers, pert_embedding, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
 
-        @torch.enable_grad()
     
     @torch.enable_grad()
     def perturb_past(
