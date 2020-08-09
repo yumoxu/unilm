@@ -2011,7 +2011,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         curr_position_ids = position_ids[:, next_pos:next_pos + 2]
         print(f'[Future perturb] curr_attention_mask: {curr_attention_mask.size()}')
         print(f'[Future perturb] x_input_embeds: {x_input_embeds.size()}')
-        print(f'[Future perturb] unperturb_past.embedding: {unperturb_past['embedding'].size()}')
+        print(f'[Future perturb] unperturb_past.embedding: {unperturb_past["embedding"].size()}')
         new_embedding, new_encoded_layers, _ = self.bert(
                 input_embeds=x_input_embeds, 
                 token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, attention_mask=curr_attention_mask,
