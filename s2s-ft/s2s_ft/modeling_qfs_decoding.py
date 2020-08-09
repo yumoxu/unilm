@@ -1999,7 +1999,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             
             return x_input_embeds
           
-        x_input_embeds = _get_x_input_embeds_and_start_pos()
+        x_input_embeds = _get_x_input_embeds()
         if self.verbosity_level >= DEBUG:
             print(f'start_pos: {start_pos}, next_pos: {next_pos}')
         
