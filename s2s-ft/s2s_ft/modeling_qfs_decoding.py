@@ -1756,10 +1756,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             loss_list = []
 
             if self.horizon_length == 1:
-                # perturb again for the future
+                # obtain future hideen states
                 # as input, use the last expected embedding (intead of actual embedding of a token)
                 # TODO check the use of history for t+2 
-                # Is it the right not updating the history via including t+1?
                 wte = self.bert.embeddings.word_embeddings  # n_vocab * n_hidden
                 inputs_embeds = torch.matmul(probs, wte.weight.data)
 
@@ -1992,14 +1991,18 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             assert not self.pos_shift, 'Input has not been implemented when pos_shift is True'
             mask_embeddings = self.bert.embeddings.word_embeddings(mask_ids)
 
-            if next_pos == input_length:
-                x_input_embeds = mask_embeddings
-                start_pos = next_pos 
-            else:
-                if self.verbosity_level >= DEBUG:
-                    print(f'[Future perturb] input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
-                x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
-                start_pos = next_pos - 1
+            # if next_pos == input_length:
+            #     x_input_embeds = mask_embeddings
+            #     start_pos = next_pos 
+            # else:
+            #     if self.verbosity_level >= DEBUG:
+            #         print(f'[Future perturb] input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
+            #     x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
+            #     start_pos = next_pos - 1
+            if self.verbosity_level >= DEBUG:
+                print(f'[Future perturb] input_embeds: {input_embeds.size()}, mask_embeddings: {mask_embeddings.size()}')
+            x_input_embeds = torch.cat((input_embeds, mask_embeddings), dim=1)
+            start_pos = next_pos - 1
             
             return x_input_embeds, start_pos
           
