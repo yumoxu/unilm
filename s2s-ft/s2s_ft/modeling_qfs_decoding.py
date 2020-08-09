@@ -1618,69 +1618,85 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             sos_ids=None
     ):
         """
-            prev_embedding and prev_encoded_layers are obtained from a prev forward pass (FP).
-            
-            prev_embedding: tensor:d_batch * seq_len * d_hidden
-            prev_encoded_layers: list of tensors:d_batch * seq_len * d_hidden
-
-            seq_len is the prev seq len, including the input len and the generation len.
+            prev_embedding and prev_encoded_layers are obtained from a prev forward pass (FP).    
+                prev_embedding: tensor:d_batch * seq_len * d_hidden
+                prev_encoded_layers: list of tensors:d_batch * seq_len * d_hidden
 
             new_embedding and new_encoded_layers are obtained from the current forward pass (FP). 
-
-            We perturb the given unpert_embedding and unpert_layers, then run the forward pass again (Perturbed FP).
-            We perturb the hidden states [:-1] and use mask_ids in the Perturbed FP.
-
         """
-        def build_unpert_past():
+        def build_past(prev_embedding, prev_encoded_layers, new_embedding, new_encoded_layers):
             """
-                In the first perturbation, new_* cover {context, [MASK]}, and prev_* are not provided.
-                Therefore, we use new_*[:-1] as unpert_*.
-                
-                In the later perturbation, prev_* are provided, and we use them as unpert_*.
+                Build past for perturbation.
+
+                In the first perturbation, new_* cover {context, [MASK]}, and prev_* are None.
+                Therefore, we use new_*[:-1] as past.
+
+                In the later perturbation, prev_* are provided, and we use them as past.
+
             """
             assert not self.pos_shift
             past = {}
-            unperturb_past = {}
             
             if prev_embedding is None:  # is the first, new_embedding is context + MASK; perturb the context
                 past['embedding'] = new_embedding[:, :-1, :]
-                unperturb_past['embedding'] = new_embedding[:, :-1, :]
+                past['layers'] = [x[:, :-1, :] for x in new_encoded_layers]
             else:
                 past['embedding'] = prev_embedding
-                unperturb_past['embedding'] = torch.cat((prev_embedding, new_embedding[:, :-1, :]), dim=1)
+                past['layers'] = prev_encoded_layers
+                
+            return past
+
+        def build_unpert_past(prev_embedding, prev_encoded_layers, new_embedding, new_encoded_layers):
+            """
+                Build unpert_past for future tokens.
+
+                In the first generation, new_* cover {context, [MASK]}, and prev_* are None.
+                We drop the last [MASK], and use new_*[:-1] as unperturb_past.
+                
+                In the later perturbation, prev_* are provided, and we concat prev_* and new_*[:-1].
+            """
+            assert not self.pos_shift
+            unperturb_past = {}
             
-            if prev_encoded_layers is None:
-                past['layers'] = [x[:, :-1, :] for x in new_encoded_layers]
+            if prev_embedding is None:  # is the first, new_embedding is context + MASK; perturb the context
+                unperturb_past['embedding'] = new_embedding[:, :-1, :]
                 unperturb_past['layers'] = [x[:, :-1, :] for x in new_encoded_layers]
             else:
-                past['layers'] = prev_encoded_layers
+                unperturb_past['embedding'] = torch.cat((prev_embedding, new_embedding[:, :-1, :]), dim=1)
                 unperturb_past['layers'] = [
                     torch.cat((prev_encoded_layers[layer_idx], new_encoded_layers[layer_idx][:, :-1, :]), dim=1)
                     for layer_idx in range(len(prev_encoded_layers))]
             
-            return past, unperturb_past
+            return unperturb_past
 
-        past, unperturb_past = build_unpert_past()
-
-        layer_grad_accumulator = [
+        past = build_past(prev_embedding, prev_encoded_layers, 
+            new_embedding, new_encoded_layers)
+        unperturb_past = build_unpert_past(prev_embedding, prev_encoded_layers, 
+            new_embedding, new_encoded_layers)
+        
+        grad_accumulator = {}
+        grad_accumulator['layers'] = [
             (np.zeros(p.shape).astype("float32"))
             for p in past['layers'][:-1]
         ]
-        embedding_grad_accumulator = np.zeros(past['embedding'].shape).astype("float32")
+        grad_accumulator['embedding'] = np.zeros(past['embedding'].shape).astype("float32")
 
-        # if accumulated_hidden is None:
-            # accumulated_hidden = 0
+        if accumulated_hidden is None:
+            accumulated_hidden = 0
         # accumulated_hidden = torch.sum(past['layers'][-1], dim=1)  # sum of the current history
         # print(f'accumulated_hidden: {accumulated_hidden}')
 
         if self.decay:
-            decay_mask = torch.arange(0., 1.0 + SMALL_CONST, 1.0 / (self.window_length))[1:]
+            decay_mask = torch.arange(0., 1.0 + SMALL_CONST, 
+                1.0 / (self.window_length))[1:]
         else:
             decay_mask = 1.0
 
         # Generate a mask is gradient perturbated is based on a past window
-        curr_length = embedding_grad_accumulator.shape[-2]  # current history length (context + generation so far)
-        print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
+        # curr_length = grad_accumulator['embedding'].shape[-2]  
+        # current history length (context + generation so far)
+        curr_length = past['embedding'].shape[-2]
+        print(f'curr_length: {curr_length}')
 
         if curr_length > self.window_length and self.window_length > 0:
             d_batch, _, d_hidden = past['embedding'].size()
@@ -1704,9 +1720,12 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             if self.verbosity_level >= VERBOSE:
                 print(f'\tPerturb Iter {next_pos}.{i + 1}')
             
-            curr_layer_perturbation = [self.to_var(torch.from_numpy(p_), requires_grad=True)
-                for p_ in layer_grad_accumulator]
-            curr_embedding_perturbation = self.to_var(torch.from_numpy(embedding_grad_accumulator), requires_grad=True)
+            curr_layer_perturbation = [
+                self.to_var(torch.from_numpy(p_), requires_grad=True)
+                for p_ in grad_accumulator['layers']]
+            curr_embedding_perturbation = self.to_var(
+                torch.from_numpy(grad_accumulator['embedding']), 
+                requires_grad=True)
 
             # Compute hidden using perturbed past
             perturbed_layers = list(map(add, past['layers'][:-1], curr_layer_perturbation))
@@ -1732,7 +1751,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # hidden = new_encoded_layers[-1] # last hidden layer, for only the current input
             # use only the last token for accumulation
-            # TODO: another option is to use the first token, instead of using [MASK]
+            # TODO: implement another option: use the first token, instead of using [MASK]
             hidden = new_encoded_layers[-1][:, -1, :]  # last hidden state of the last hidden layer
             # print(f'hidden: {hidden.size()}')
             # new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
@@ -1819,7 +1838,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # print(f'loss: {loss.requires_grad}, {loss}')
 
             # compute gradients
-            loss.backward(retain_graph=True)
+            # loss.backward(retain_graph=True)
+            loss.backward()
 
             if self.verbosity_level >= DEBUG:
                 print(f'Grad of discrim_loss: {discrim_loss.grad}')
@@ -1841,7 +1861,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     (torch.norm(p_.grad * window_mask) + SMALL_CONST)
                     for index, p_ in enumerate(curr_layer_perturbation)
                 ]
-                embedding_grad_norm = (torch.norm(curr_embedding_perturbation.grad * window_mask) + SMALL_CONST)
+                embedding_grad_norm = torch.norm(curr_embedding_perturbation.grad * window_mask) + SMALL_CONST
 
             def finalize_grad(var, norm):
                 return -stepsize * (var.grad * window_mask / norm ** self.gamma).data.cpu().numpy()
@@ -1853,8 +1873,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             embedding_grad = finalize_grad(curr_embedding_perturbation, norm=embedding_grad_norm)
 
             # accumulate gradient
-            layer_grad_accumulator = list(map(add, layer_grad, layer_grad_accumulator))
-            embedding_grad_accumulator = embedding_grad + embedding_grad_accumulator
+            grad_accumulator['layers'] = list(map(add, layer_grad, grad_accumulator['layers']))
+            grad_accumulator['embedding'] = embedding_grad + grad_accumulator['embedding']
 
             # reset gradients, just to make sure
             for p_ in curr_layer_perturbation:
@@ -1871,14 +1891,15 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # apply the accumulated perturbations to the past
         pert_past= {}
 
-        layer_grad_accumulator = [self.to_var(torch.from_numpy(p_), requires_grad=True)
-            for p_ in layer_grad_accumulator]
-        pert_past['layers'] = list(map(add, past['layers'][:-1], layer_grad_accumulator))
+        grad_accumulator['layers'] = [self.to_var(torch.from_numpy(p_), requires_grad=True)
+            for p_ in grad_accumulator['layers']]
+        pert_past['layers'] = list(map(add, past['layers'][:-1], grad_accumulator['layers']))
         pert_past['layers'].append(past['layers'][-1])  # the last layer has no gradient
 
-        embedding_grad_accumulator = self.to_var(torch.from_numpy(embedding_grad_accumulator), 
+        grad_accumulator['embedding'] = self.to_var(
+            torch.from_numpy(grad_accumulator['embedding']), 
             requires_grad=True)
-        pert_past['embedding'] = past['embedding'] + embedding_grad_accumulator
+        pert_past['embedding'] = past['embedding'] + grad_accumulator['embedding']
 
         return pert_past, new_accumulated_hidden, layer_grad_norms, embedding_grad_norm, loss_per_iter
 
@@ -2231,7 +2252,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
 
             # for unpert discrim_loss
-            # TODO: another option is to remove the last [MASK]: unpert_last_hidden[:, :-1, :]
+            # TODO: try another option: remove the last [MASK]: unpert_last_hidden[:, :-1, :]
             unpert_discrim_loss, _, _ = discriminator(torch.mean(unpert_last_hidden, dim=1))
             if self.verbosity_level >= VERY_VERBOSE:
                 print(f"unperturbed discrim loss: {unpert_discrim_loss.data.cpu().numpy()}")
