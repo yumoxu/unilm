@@ -145,13 +145,6 @@ def add_pp_args(parser):
         "--uncond", action="store_true",
         help="Generate from end-of-text as prefix"
     )
-    parser.add_argument(
-        "--num_samples",
-        type=int,
-        default=1,
-        help="Number of samples to generate from the modified latents",
-    )
-    parser.add_argument("--length", type=int, default=100)
     parser.add_argument("--stepsize", type=float, default=0.02)
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--num_iterations", type=int, default=3)
