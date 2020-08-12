@@ -986,10 +986,11 @@ class MargeDiscriminator(nn.Module):
         instc_score_in = torch.squeeze(instc_score_in, dim=-1) / np.sqrt(self.hidden_size)  # d_batch * max_ns
 
         instc_score = torch.sigmoid(instc_score_in)
-        if self.fp16:
-            instc_score = instc_score * instc_mask.half()
-        else:
-            instc_score = instc_score * instc_mask.float()
+        # if self.fp16:
+        #     instc_score = instc_score * instc_mask.half()
+        # else:
+            # instc_score = instc_score * instc_mask.float()
+        instc_score = instc_score * instc_mask
         return instc_score
     
     def _pool(self, instc_score, instc_mask=None):
@@ -1018,18 +1019,19 @@ class MargeDiscriminator(nn.Module):
         else:
             raise ValueError(f'Invalid pool_func: {self.pool_func}')
 
-    def get_loss(self, pred):
-        pred = pred.view(-1).half()
-        label = torch.tensor(pred.shape[0] * [self.label], device=self.device, dtype=torch.half)
-        # print(f'label: {label.size()}, pred: {pred.size()}')
-        loss = MSELoss()(pred, label)
-        return loss
-
     def _adapt_var(self, var):
         if self.fp16:
             return var.half()
         else:
             return var.float()
+    
+    def get_loss(self, pred):
+        pred = pred.view(-1)
+        label = torch.tensor(pred.shape[0] * [self.label], device=self.device, dtype=torch.float)
+        label = self._adapt_var(label)
+        # print(f'label: {label.size()}, pred: {pred.size()}')
+        loss = MSELoss()(pred, label)
+        return loss
 
     def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
         # print(f'[init_slot_rep] summ_id: {type(summ_id)}, {summ_id}')
@@ -1041,10 +1043,9 @@ class MargeDiscriminator(nn.Module):
 
         # select class reps
         slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
-        print(f'slot_rep: {slot_rep.dtype}')
+        # print(f'slot_rep: {slot_rep.dtype}')
         self.slot_mask = self._adapt_var(slot_mask)
-        print(f'self.slot_mask: {self.slot_mask.dtype}')
-        
+        # print(f'self.slot_mask: {self.slot_mask.dtype}')
         self.slot_rep = slot_rep * self.slot_mask[:, :, None]
         # if self.fp16:
         #     self.slot_rep = slot_rep * slot_mask[:, :, None].half()
