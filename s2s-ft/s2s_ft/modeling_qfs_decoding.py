@@ -990,7 +990,7 @@ class MargeDiscriminator(nn.Module):
             d_batch = slot_rep.size(0)
             slot_rep = torch.unsqueeze(slot_rep, dim=1) # d_batch * 1 * max_ns * d_embed
             cand_rep = torch.reshape(cand_rep, [d_batch, K, d_embed, 1])  # d_batch * K * d_embed * 1
-            print(f'K: {K}')
+            # print(f'K: {K}')
             instc_score_in = torch.matmul(slot_rep, cand_rep)  # d_batch * K * max_ns * 1
             instc_score_in = torch.squeeze(instc_score_in, dim=-1)  # d_batch * K * max_ns
             instc_score_in = instc_score_in / np.sqrt(self.hidden_size)
@@ -1092,12 +1092,14 @@ class MargeDiscriminator(nn.Module):
             token_type_ids=summ_seg_id, 
             attention_mask=summ_mask)[0].view(-1, max_summ_seq_len, self.hidden_size)
 
+        # FIXME try to detach bert_model if the memory still exceeds
         # select class reps
         slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
         # print(f'slot_rep: {slot_rep.dtype}')
         self.slot_mask = self._adapt_var(slot_mask)
         # print(f'self.slot_mask: {self.slot_mask.dtype}')
         self.slot_rep = slot_rep * self.slot_mask[:, :, None]
+        self.slot_rep.detach()
         # if self.fp16:
         #     self.slot_rep = slot_rep * slot_mask[:, :, None].half()
         #     self.slot_mask = slot_mask.half()
@@ -1457,7 +1459,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         new_accumulated_hidden = None
         for i in range(self.num_iterations):
             if self.verbosity_level >= VERBOSE:
-                print(f'\tPerturb Iter {next_pos}.{i + 1}')
+                print(f'Perturb Iter {next_pos}.{i + 1}')
             
             curr_layer_perturbation = [self.to_var(torch.from_numpy(p_), requires_grad=True)
                 for p_ in layer_grad_accumulator]
@@ -2051,9 +2053,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         curr_token_type_ids = token_type_ids[:, next_pos:next_pos + 2]
         curr_attention_mask = attention_mask[:, next_pos:next_pos + 2, :next_pos + 2]
         curr_position_ids = position_ids[:, next_pos:next_pos + 2]
-        print(f'[Future perturb] curr_attention_mask: {curr_attention_mask.size()}')
-        print(f'[Future perturb] x_input_embeds: {x_input_embeds.size()}')
-        print(f'[Future perturb] unperturb_past.embedding: {unperturb_past["embedding"].size()}')
+        if self.verbosity_level >= DEBUG:
+            print(f'[Future perturb] curr_attention_mask: {curr_attention_mask.size()}')
+            print(f'[Future perturb] x_input_embeds: {x_input_embeds.size()}')
+            print(f'[Future perturb] unperturb_past.embedding: {unperturb_past["embedding"].size()}')
         new_embedding, new_encoded_layers, _ = self.bert(
                 input_embeds=x_input_embeds, 
                 token_type_ids=curr_token_type_ids, position_ids=curr_position_ids, attention_mask=curr_attention_mask,
