@@ -127,7 +127,18 @@ def features2batch(queries,
         Borrowed and revised from func:feature2array
     """
     n_samples = len(queries)
-    
+
+    convert_params = {
+        'max_summ_seq_len': max_summ_seq_len,
+        'max_num_slot': max_num_slot,
+        'slot_as_cls': slot_as_cls,
+        'add_cls_at_begin': add_cls_at_begin,
+        'interval_segment': interval_segment,
+        'tokenizer': tokenizer,
+        'pad_token': pad_token,
+        'pad_token_segment_id': pad_token_segment_id,
+    }
+
     features = []
     for query in queries:
         convert_params['query'] = query
