@@ -106,7 +106,7 @@ def convert_summ_text_to_features(text,
         'summ_id': input_ids,
         'summ_mask': input_mask,
         'summ_seg_id': segment_ids,
-        'slot_id': slot_id, 
+        'slot_id': slot_ids, 
         'slot_mask': slot_mask,
     }
     return QueryFeatures(**features_params)
