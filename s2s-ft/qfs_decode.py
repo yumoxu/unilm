@@ -260,7 +260,8 @@ def load_discriminator(args):
     model = MargeDiscriminator(bert_model, 
         label=args.disc_label, 
         loss_idx=args.disc_loss_idx,
-        pool_func='ls'
+        pool_func='ls',
+        fp16=args.fp16
     )
     # ckpt_dp = path_parser.model_save / f'marge_{marge_config.MARGE_CONFIG_ID}' / f'checkpoint-{marge_config.MARGE_CKPT}'
     checkpoint = torch.load(os.path.join(args.marge_ckpt_dp, 'pytorch_model.bin'))
