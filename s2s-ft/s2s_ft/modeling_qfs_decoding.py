@@ -1556,8 +1556,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # print(f'loss: {loss.requires_grad}, {loss}')
 
             # compute gradients
-            # loss.backward()
-            loss.backward(retain_graph=True)
+            loss.backward()
+            # loss.backward(retain_graph=True)
 
             if self.verbosity_level >= DEBUG:
                 print(f'Grad of discrim_loss: {discrim_loss.grad}')
@@ -1858,8 +1858,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 # print(f'loss: {loss.requires_grad}, {loss}')
 
             # compute gradients
-            # loss.backward(retain_graph=True)
-            loss.backward()
+            loss.backward(retain_graph=True)
+            # loss.backward()
 
             if self.verbosity_level >= DEBUG:
                 print(f'Grad of discrim_loss: {discrim_loss.grad}')
