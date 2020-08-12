@@ -12,7 +12,7 @@ parent_sys_path = dirname(sys_path)
 if parent_sys_path not in sys.path:
     sys.path.insert(0, parent_sys_path)
 
-from query_tools import get_cid2masked_query
+from qfs.query_tools import get_cid2masked_query
 
 import io
 import json
