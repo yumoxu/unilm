@@ -42,7 +42,8 @@ class ToTensor(object):
             # if k.endswith('_ids'):
             #     v = v.type(torch.LongTensor)  # for embedding look up
             #     v = v.cuda()
-            v = v.type(torch.FloatTensor)  # for embedding look up
+            # v = v.type(torch.FloatTensor)  # for embedding look up
+            v = tensor(v)
             v = v.cuda()
             numpy_dict[k] = v
         return numpy_dict
