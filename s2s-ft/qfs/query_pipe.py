@@ -39,9 +39,11 @@ class ToTensor(object):
 
     def __call__(self, numpy_dict):
         for (k, v) in numpy_dict.items():
-            if k.endswith('_ids'):
-                v = v.type(torch.LongTensor)  # for embedding look up
-                v = v.cuda()
+            # if k.endswith('_ids'):
+            #     v = v.type(torch.LongTensor)  # for embedding look up
+            #     v = v.cuda()
+            v = v.type(torch.FloatTensor)  # for embedding look up
+            v = v.cuda()
             numpy_dict[k] = v
         return numpy_dict
 
