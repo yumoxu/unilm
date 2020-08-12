@@ -271,8 +271,11 @@ def load_discriminator(args):
     # print('[load_discriminator] Parallel Data to devices: {}'.format(device_ids))
     if args.fp16:
         model.half()
-
+    
     model.cuda()
+    if args.n_gpu > 1:
+        model = torch.nn.DataParallel(model)
+
     model.eval()
     return model, tokenizer
 
