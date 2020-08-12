@@ -129,7 +129,7 @@ def features2batch(queries,
     n_samples = len(queries)
 
     convert_params = {
-        'max_summ_seq_len': max_summ_seq_len,
+        'max_seq_length': max_summ_seq_len,
         'max_num_slot': max_num_slot,
         'slot_as_cls': slot_as_cls,
         'add_cls_at_begin': add_cls_at_begin,
@@ -141,7 +141,7 @@ def features2batch(queries,
 
     features = []
     for query in queries:
-        convert_params['query'] = query
+        convert_params['text'] = query
         feature = convert_summ_text_to_features(**convert_params)
         features.append(feature)
 
