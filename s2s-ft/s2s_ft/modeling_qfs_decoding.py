@@ -1020,7 +1020,7 @@ class MargeDiscriminator(nn.Module):
 
     def get_loss(self, pred):
         pred = pred.view(-1)
-        label = torch.tensor(pred.shape[0] * [self.label], device=self.device, dtype=torch.half)
+        label = torch.tensor(pred.shape[0] * [self.label], device=self.device, dtype=torch.float)
         # print(f'label: {label.size()}, pred: {pred.size()}')
         loss = MSELoss()(pred, label)
         return loss
