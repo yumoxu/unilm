@@ -1053,7 +1053,7 @@ class MargeDiscriminator(nn.Module):
     #     if self.new_batch or self.slot_rep is None:  # only update for new data
     #         self.get_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
     def forward(self, cand_rep):
-        assert (self.slot_rep is not None) or (self.slot_mask is not None) \
+        assert (self.slot_rep is not None) or (self.slot_mask is not None), \
             'Init self.slot_rep and self.slot_mask before calling self.foward()!'
         
         instc_score = self._match(cand_rep, self.slot_rep, instc_mask=self.slot_mask)
