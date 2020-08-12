@@ -160,7 +160,7 @@ def features2batch(queries,
 
 
 def get_test_cc_ids(year):
-    proj_root = Path('/disk/nfs/ostrom/s1617290')
+    proj_root = Path('/disk/nfs/ostrom/s1617290/shiftsum')
     dp_data = proj_root / 'data'
     dp_duc_cluster = dp_data / 'duc_cluster' / year
     SEP = '_'

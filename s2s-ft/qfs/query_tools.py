@@ -12,7 +12,7 @@ import json
 
 
 def get_annual_masked_query(year, query_type):
-    proj_root = Path('/disk/nfs/ostrom/s1617290')
+    proj_root = Path('/disk/nfs/ostrom/s1617290/shiftsum')
     dp_data = proj_root / 'data'
     dp_masked_query = dp_data / 'masked_query'
     NARR = 'narr'
