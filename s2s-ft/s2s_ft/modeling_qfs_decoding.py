@@ -975,7 +975,7 @@ class MargeDiscriminator(nn.Module):
 
         :param cand_rep: d_batch * d_embed
         :param slot_rep: d_batch * max_ns * d_embed
-        :param instc_mask: d_batch * max_nc
+        :param instc_mask: d_batch * max_ns
 
         :return:
             score: d_batch * max_ns
@@ -984,23 +984,27 @@ class MargeDiscriminator(nn.Module):
         cand_rep = torch.unsqueeze(cand_rep, dim=-1)  # d_batch * d_embed * 1
 
         # TODO cand_rep's d_batch can be original d_batch * K
-        K = cand_rep.size(0) / slot_rep.size(0)
+        K = int(cand_rep.size(0) / slot_rep.size(0))
         if K > 1:
             d_embed = cand_rep.size(-2)
             d_batch = slot_rep.size(0)
             slot_rep = torch.unsqueeze(slot_rep, dim=1) # d_batch * 1 * max_ns * d_embed
-            cand_rep = torch.reshape(cand_rep, [d_batch, int(K), d_embed, 1])  # d_batch * K * d_embed * 1
+            cand_rep = torch.reshape(cand_rep, [d_batch, K, d_embed, 1])  # d_batch * K * d_embed * 1
             print(f'K: {K}')
             instc_score_in = torch.matmul(slot_rep, cand_rep)  # d_batch * K * max_ns * 1
-            instc_score_in = torch.squeeze(instc_score_in, dim=-1)
-            instc_score_in = torch.reshape(instc_score_in, [-1, instc_score_in.size(-1)])  # (d_batch * K) * max_ns
-            instc_score_in = instc_score_in / np.sqrt(self.hidden_size)  
+            instc_score_in = torch.squeeze(instc_score_in, dim=-1)  # d_batch * K * max_ns
+            instc_score_in = instc_score_in / np.sqrt(self.hidden_size)
+            instc_score = torch.sigmoid(instc_score_in)  # d_batch * K * max_ns
+            
+            # mask
+            instc_mask = torch.unsqueeze(instc_mask, dim=1)  # d_batch * 1 * max_ns
+            instc_score = instc_score * instc_mask
+            instc_score = torch.reshape(instc_score, (-1, instc_score.size(-1)))  # (d_batch * K) * max_ns
         else:
             instc_score_in = torch.matmul(slot_rep, cand_rep)  # d_batch * max_ns * 1
             instc_score_in = torch.squeeze(instc_score_in, dim=-1) / np.sqrt(self.hidden_size)  # d_batch * max_ns
-
-        instc_score = torch.sigmoid(instc_score_in)
-        instc_score = instc_score * instc_mask
+            instc_score = torch.sigmoid(instc_score_in)
+            instc_score = instc_score * instc_mask
         return instc_score
     
     def _pool(self, instc_score, instc_mask=None):
