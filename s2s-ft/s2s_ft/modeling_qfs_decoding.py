@@ -1041,6 +1041,7 @@ class MargeDiscriminator(nn.Module):
 
         # select class reps
         slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
+        print(f'slot_rep: {type(slot_rep)}')
         slot_rep = slot_rep * slot_mask[:, :, None].float()
         # if self.fp16:
         #     self.slot_rep = slot_rep * slot_mask[:, :, None].half()

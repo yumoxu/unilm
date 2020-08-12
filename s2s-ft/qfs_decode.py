@@ -268,6 +268,9 @@ def load_discriminator(args):
 
     # model = nn.DataParallel(model, device_ids=device_ids)
     # print('[load_discriminator] Parallel Data to devices: {}'.format(device_ids))
+    if args.fp16:
+        model.half()
+
     model.cuda()
     model.eval()
     return model, tokenizer
