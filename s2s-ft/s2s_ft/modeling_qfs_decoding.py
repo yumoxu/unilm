@@ -1026,7 +1026,7 @@ class MargeDiscriminator(nn.Module):
         return loss
 
     def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
-        print(f'[init_slot_rep] summ_id: {summ_id.size()}')
+        print(f'[init_slot_rep] summ_id: {summ_id}')
 
         max_summ_seq_len = summ_id.size(1)
         
