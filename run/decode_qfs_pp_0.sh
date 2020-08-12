@@ -37,6 +37,7 @@ $python $python_file \
   --forbid_ignore_word "." \
   --min_len 400 \
   --marge_ckpt_dp ${MARGE_CKPT_PATH}\
+  --year='2005' \
   --max_summ_seq_len=96 \
   --max_num_slot=32 \
   --add_cls_at_begin \

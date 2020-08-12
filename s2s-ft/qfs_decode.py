@@ -135,6 +135,8 @@ def add_discriminator_args(parser):
     """
     parser.add_argument('--marge_ckpt_dp', type=str, default=None,
                         help='Checkpoint directory for pretrained MaRGE model.')
+    parser.add_argument("--year", default='2005', type=str,
+                        help="The year you want to get clusters and queries from.")
     parser.add_argument("--max_summ_seq_len", default=96, type=int,
                         help="The maximum total summary sequence length after tokenization. Sequences longer "
                              "than this will be truncated, sequences shorter will be padded.")
@@ -378,6 +380,7 @@ def main():
             query_parmas = {
                 'start_idx': next_i,
                 'end_idx': next_i + args.batch_size,
+                'year': args.year,
                 'query_type': 'narr',
                 'max_summ_seq_len': args.max_summ_seq_len,
                 'max_num_slot': args.max_num_slot,
