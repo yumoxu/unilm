@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from pathlib import Path
-from os.path import join, dirname, abspath
-# sys.path.insert(0, dirname(dirname(abspath(__file__))))
+from os.path import join
 import json
 
 """
@@ -11,16 +10,16 @@ import json
     Original file path: shiftsum/src/querysum/tools/query_tools.py
 """
 
-proj_root = Path('/disk/nfs/ostrom/s1617290')
-dp_data = proj_root / 'data'
-masked_query = dp_data / 'masked_query'
-NARR = 'narr'
-TITLE = 'title'
-QUERY = 'query'
-years = ['2005', '2006', '2007']
 
 def get_annual_masked_query(year, query_type):
-    fp = masked_query / f'{year}.json'
+    proj_root = Path('/disk/nfs/ostrom/s1617290')
+    dp_data = proj_root / 'data'
+    dp_masked_query = dp_data / 'masked_query'
+    NARR = 'narr'
+    TITLE = 'title'
+    QUERY = 'query'
+
+    fp = dp_masked_query / f'{year}.json'
     annual_dict = dict()
     with open(fp) as f:
         for line in f:
@@ -44,6 +43,7 @@ def get_annual_masked_query(year, query_type):
 
 
 def get_cid2masked_query(query_type):
+    years = ['2005', '2006', '2007']
     query_dict = dict()
     for year in years:
         annual_dict = get_annual_masked_query(year, query_type=query_type)

@@ -1,16 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
-from os.path import isfile, isdir, join, dirname, abspath, exists
+from os.path import isfile, isdir, join
 from os import listdir
 from pathlib import Path
-
-# sys_path = dirname(dirname(abspath(__file__)))
-# if sys_path not in sys.path:
-#     sys.path.insert(0, sys_path)
-
-# parent_sys_path = dirname(sys_path)
-# if parent_sys_path not in sys.path:
-#     sys.path.insert(0, parent_sys_path)
 
 from qfs.query_tools import get_cid2masked_query
 
@@ -167,16 +159,14 @@ def features2batch(queries,
     return batch
 
 
-proj_root = Path('/disk/nfs/ostrom/s1617290')
-dp_data = proj_root / 'data'
-dp_duc_cluster = dp_data / 'duc_cluster' 
-SEP = '_'
-placement = 'gpu'
-
-
 def get_test_cc_ids(year):
-    root = dp_duc_cluster / year
-    all_cc_ids = [SEP.join((year, fn)) for fn in listdir(root) if isdir(join(root, fn))]
+    proj_root = Path('/disk/nfs/ostrom/s1617290')
+    dp_data = proj_root / 'data'
+    dp_duc_cluster = dp_data / 'duc_cluster' / year
+    SEP = '_'
+
+    all_cc_ids = [SEP.join((year, fn)) for fn in listdir(dp_duc_cluster)
+        if isdir(join(dp_duc_cluster, fn))]
     return all_cc_ids
 
 
