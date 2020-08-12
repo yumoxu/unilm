@@ -120,7 +120,8 @@ def features2batch(queries,
         interval_segment,
         tokenizer,
         pad_token=0,
-        pad_token_segment_id=0
+        pad_token_segment_id=0,
+        transform=None,
     ):
     """
         Borrowed and revised from func:feature2array
@@ -156,6 +157,8 @@ def features2batch(queries,
     }
 
     # return all_summ_id, all_summ_mask, all_summ_seg_id, all_slot_id, all_slot_mask
+    if transform:
+        batch = transform(batch)
     return batch
 
 
@@ -213,8 +216,8 @@ def get_query_tensors(start_idx,
         'tokenizer': tokenizer,
         'pad_token': 0,
         'pad_token_segment_id': 0,
+        'transformer': ToTensor()
     }
-    batch = features2array(**base_params)
-    batch = ToTensor(batch)
 
+    batch = features2batch(**base_params)
     return batch
