@@ -966,6 +966,10 @@ class MargeDiscriminator(nn.Module):
         self.device = device
         self.fp16 = fp16
 
+        # attributes that should be updated per batch
+        self.slot_rep = None
+        self.slot_mask = None
+
     def _match(self, cand_rep, slot_rep, instc_mask):
         """
 
@@ -1021,7 +1025,7 @@ class MargeDiscriminator(nn.Module):
         loss = MSELoss()(pred, label)
         return loss
 
-    def get_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
+    def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
         max_summ_seq_len = summ_id.size(1)
         
         summ_rep = self.bert_model(summ_id, 
@@ -1035,8 +1039,9 @@ class MargeDiscriminator(nn.Module):
             slot_rep = slot_rep * slot_mask[:, :, None].half()
         else:
             slot_rep = slot_rep * slot_mask[:, :, None].float()
-        return slot_rep
-
+        self.slot_rep = slot_rep
+        self.slot_mask = slot_mask
+    
     def get_rand_slot_rep(self, d_batch, max_n_slot):
         """
             For debug.
@@ -1044,11 +1049,15 @@ class MargeDiscriminator(nn.Module):
         slot_rep = torch.rand(size=(d_batch, max_n_slot, 768), device=self.device, dtype=torch.half)
         return slot_rep
     
-    def _forward(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask, cand_rep):
-        slot_rep = self.get_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
-        instc_score = self._match(cand_rep, slot_rep, instc_mask=slot_mask)
-
-        group_score = self._pool(instc_score, instc_mask=slot_mask)  # d_batch * 1
+    # def _forward(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask, cand_rep):
+    #     if self.new_batch or self.slot_rep is None:  # only update for new data
+    #         self.get_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
+    def forward(self, cand_rep):
+        assert (self.slot_rep is not None) or (self.slot_mask is not None) \
+            'Init self.slot_rep and self.slot_mask before calling self.foward()!'
+        
+        instc_score = self._match(cand_rep, self.slot_rep, instc_mask=self.slot_mask)
+        group_score = self._pool(instc_score, instc_mask=self.slot_mask)  # d_batch * 1
         group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
 
         if self.loss_idx >= 0:
@@ -1059,7 +1068,11 @@ class MargeDiscriminator(nn.Module):
 
         return loss, group_score, instc_score
     
-    def forward(self, cand_rep):
+    def _forward(self, cand_rep):
+        """
+            
+            For unit test. Forward with random slot representations. 
+        """
         slot_rep = self.get_rand_slot_rep(d_batch=cand_rep.size(0), max_n_slot=8)
         d_embed = cand_rep.size()[-1]
         cand_rep = torch.unsqueeze(cand_rep, dim=-1)  # d_batch * d_embed * 1

@@ -22,6 +22,8 @@ from s2s_ft.utils import load_and_cache_examples
 from s2s_ft.tokenization_unilm import UnilmTokenizer
 from s2s_ft.tokenization_minilm import MinilmTokenizer
 from s2s_ft.modeling_qfs_decoding import BertConfig, MargeDiscriminator, BertForQueryFocusedDecoder
+import qfs.query_pipe as query_pipe
+
 
 TOKENIZER_CLASSES = {
     'bert': BertTokenizer,
@@ -175,10 +177,30 @@ def add_pp_args(parser):
                         help="verbosiry level")
 
 
+def add_query_args(parser):
+    """
+        Borrowed from MaRGE training.
+
+    """
+    parser.add_argument("--max_summ_seq_len", default=96, type=int,
+                        help="The maximum total summary sequence length after tokenization. Sequences longer "
+                             "than this will be truncated, sequences shorter will be padded.")
+    parser.add_argument("--max_num_slot", default=32, type=int,
+                        help="The maximum total instances to be considered in MIL. Instances over "
+                             "this will be truncated.")
+    parser.add_argument('--slot_as_cls', action='store_true',
+                        help="Slot by default is represented with [MASK]. This argument sets it to [CLS].")
+    parser.add_argument('--add_cls_at_begin', action='store_true',
+                        help="Add [CLS] at the beginning of the masked summary sequence.")
+    parser.add_argument('--interval_segment', action='store_true',
+                        help="Use interval segment embeddings to distinguish sentences in the masked summary.")
+
+
 def parse_args(parser):
     add_generation_args(parser)
     add_discriminator_args(parser)
     add_pp_args(parser)
+    add_query_args(parser)
     
     args = parser.parse_args()
     return args
@@ -327,7 +349,7 @@ def main():
     args = parse_args(parser)
     # device, n_gpu = set_env(args)
     set_env(args)
-    discriminator, _ = load_discriminator(args)
+    discriminator, marge_tokenizer = load_discriminator(args)
 
     # tokenizer, config, bi_uni_pipeline, mask_word_id, eos_word_ids, sos_word_id, forbid_ignore_set = set_tokenizer(args)
     tokenizer, model, bi_uni_pipeline, model_recover_path = load_unilm(args)
@@ -356,7 +378,30 @@ def main():
             batch = seq2seq_loader.batch_list_to_batch_tensors(instances)
             batch = [t.to(args.device) if t is not None else None for t in batch]
             input_ids, token_type_ids, position_ids, input_mask, mask_qkv, task_idx = batch
-            traces = model(input_ids, token_type_ids, position_ids, input_mask, task_idx=task_idx, mask_qkv=mask_qkv, discriminator=discriminator)
+            
+            # FIXME test
+            query_parmas = {
+                'start_idx': next_i,
+                'end_idx': next_i + args.batch_size,
+                'query_type': 'NARR',
+                'max_summ_seq_len': args.max_summ_seq_len,
+                'max_num_slot': args.max_num_slot,
+                'slot_as_cls': args.slot_as_cls,
+                'add_cls_at_begin': args.add_cls_at_begin,
+                'interval_segment': args.interval_segment,
+                'tokenizer': marge_tokenizer,
+            }
+            query_batch = query_pipe.get_query_tensors(**query_parmas)
+            for k, v in query_batch.items():
+                print(f'{k}: {query_batch[k].size()}')
+            
+            # discriminator.init_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
+            discriminator.init_slot_rep(**query_batch)
+
+            traces = model(input_ids, token_type_ids, position_ids, input_mask, 
+                task_idx=task_idx, 
+                mask_qkv=mask_qkv, 
+                discriminator=discriminator)
             if args.beam_size > 1:
                 traces = {k: v.tolist() for k, v in traces.items()}
                 output_ids = traces['pred_seq']
