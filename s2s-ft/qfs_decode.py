@@ -391,7 +391,7 @@ def main():
             }
             query_batch = query_pipe.get_query_tensors(**query_parmas)
             for k, v in query_batch.items():
-                print(f'{k}: {query_batch[k].size()}')
+                print(f'{k}: {v}')
             
             # discriminator.init_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
             discriminator.init_slot_rep(**query_batch)

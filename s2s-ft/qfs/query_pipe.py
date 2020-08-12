@@ -30,6 +30,22 @@ class QueryFeatures(object):
         self.slot_mask = slot_mask
 
 
+class ToTensor(object):
+    """
+        Borrowed from shiftsum/src/data/data_tools.py.
+
+        Convert ndarrays in sample to Tensors.
+    """
+
+    def __call__(self, numpy_dict):
+        for (k, v) in numpy_dict.items():
+            if k.endswith('_ids'):
+                v = v.type(torch.LongTensor)  # for embedding look up
+                v = v.cuda()
+            numpy_dict[k] = v
+        return numpy_dict
+
+
 def convert_summ_text_to_features(text, 
         max_seq_length,
         tokenizer, 
@@ -182,22 +198,6 @@ def get_test_cc_ids(year):
     all_cc_ids = [SEP.join((year, fn)) for fn in listdir(dp_duc_cluster)
         if isdir(join(dp_duc_cluster, fn))]
     return all_cc_ids
-
-
-class ToTensor(object):
-    """
-        Borrowed from shiftsum/src/data/data_tools.py.
-
-        Convert ndarrays in sample to Tensors.
-    """
-
-    def __call__(self, numpy_dict):
-        for (k, v) in numpy_dict.items():
-            if k.endswith('_ids'):
-                v = v.type(torch.LongTensor)  # for embedding look up
-                v = v.cuda()
-            numpy_dict[k] = v
-        return numpy_dict
 
 
 def get_query_tensors(start_idx, 
