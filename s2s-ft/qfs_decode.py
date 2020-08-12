@@ -273,10 +273,9 @@ def load_discriminator(args):
         model.half()
     
     model.cuda()
-    # if args.n_gpu > 1:
-    #     model = torch.nn.DataParallel(model)
-
     model.eval()
+    for param in model.parameters():
+        param.requires_grad = False
     return model, tokenizer
 
 
