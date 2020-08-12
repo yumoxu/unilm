@@ -980,12 +980,13 @@ class MargeDiscriminator(nn.Module):
         :return:
             score: d_batch * max_ns
         """
+       
         cand_rep = torch.unsqueeze(cand_rep, dim=-1)  # d_batch * d_embed * 1
 
         # TODO cand_rep's d_batch can be original d_batch * K
         K = cand_rep.size(0) / slot_rep.size(0)
         if K > 1:
-            d_embed = cand_rep.size(-1)
+            d_embed = cand_rep.size(-2)
             d_batch = slot_rep.size(0)
             slot_rep = torch.unsqueeze(slot_rep, dim=1) # d_batch * 1 * max_ns * d_embed
             cand_rep = torch.reshape(cand_rep, [d_batch, int(K), d_embed, 1])  # d_batch * K * d_embed * 1
