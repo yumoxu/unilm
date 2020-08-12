@@ -378,7 +378,7 @@ def main():
             query_parmas = {
                 'start_idx': next_i,
                 'end_idx': next_i + args.batch_size,
-                'query_type': 'NARR',
+                'query_type': 'narr',
                 'max_summ_seq_len': args.max_summ_seq_len,
                 'max_num_slot': args.max_num_slot,
                 'slot_as_cls': args.slot_as_cls,
