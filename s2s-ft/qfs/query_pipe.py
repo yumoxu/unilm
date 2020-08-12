@@ -10,6 +10,7 @@ import io
 import json
 import numpy as np
 from tqdm import tqdm
+import torch
 
 """
     This module contains functions for loading queries, e,g., features and tesnors.
@@ -43,7 +44,7 @@ class ToTensor(object):
             #     v = v.type(torch.LongTensor)  # for embedding look up
             #     v = v.cuda()
             # v = v.type(torch.FloatTensor)  # for embedding look up
-            v = tensor(v)
+            v = torch.tensor(v)
             v = v.cuda()
             numpy_dict[k] = v
         return numpy_dict
