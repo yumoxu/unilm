@@ -4,13 +4,13 @@ from os.path import isfile, isdir, join, dirname, abspath, exists
 from os import listdir
 from pathlib import Path
 
-sys_path = dirname(dirname(abspath(__file__)))
-if sys_path not in sys.path:
-    sys.path.insert(0, sys_path)
+# sys_path = dirname(dirname(abspath(__file__)))
+# if sys_path not in sys.path:
+#     sys.path.insert(0, sys_path)
 
-parent_sys_path = dirname(sys_path)
-if parent_sys_path not in sys.path:
-    sys.path.insert(0, parent_sys_path)
+# parent_sys_path = dirname(sys_path)
+# if parent_sys_path not in sys.path:
+#     sys.path.insert(0, parent_sys_path)
 
 from qfs.query_tools import get_cid2masked_query
 

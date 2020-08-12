@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
+from pathlib import Path
 from os.path import join, dirname, abspath
-sys.path.insert(0, dirname(dirname(abspath(__file__))))
+# sys.path.insert(0, dirname(dirname(abspath(__file__))))
 import json
 
 """
