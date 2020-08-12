@@ -1025,9 +1025,14 @@ class MargeDiscriminator(nn.Module):
         loss = MSELoss()(pred, label)
         return loss
 
-    def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
-        print(f'[init_slot_rep] summ_id: {type(summ_id)}, {summ_id}')
+    def _adapt_var(self, var):
+        if self.fp16:
+            return var.half()
+        else:
+            return var.float()
 
+    def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
+        # print(f'[init_slot_rep] summ_id: {type(summ_id)}, {summ_id}')
         max_summ_seq_len = summ_id.size(1)
         
         summ_rep = self.bert_model(summ_id, 
@@ -1036,14 +1041,15 @@ class MargeDiscriminator(nn.Module):
 
         # select class reps
         slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
-
-        if self.fp16:
-            self.slot_rep = slot_rep * slot_mask[:, :, None].half()
-            self.slot_mask = slot_mask.half()
-        else:
-            self.slot_rep = slot_rep * slot_mask[:, :, None].float()
-            self.slot_mask = slot_mask.float()
-        # self.slot_rep = slot_rep
+        slot_rep = slot_rep * slot_mask[:, :, None]
+        # if self.fp16:
+        #     self.slot_rep = slot_rep * slot_mask[:, :, None].half()
+        #     self.slot_mask = slot_mask.half()
+        # else:
+        #     self.slot_rep = slot_rep * slot_mask[:, :, None].float()
+        #     self.slot_mask = slot_mask.float()
+        self.slot_rep = self._adapt_var(slot_rep)
+        self.slot_mask = self._adapt_var(slot_mask)
     
     def get_rand_slot_rep(self, d_batch, max_n_slot):
         """
@@ -1058,7 +1064,8 @@ class MargeDiscriminator(nn.Module):
     def forward(self, cand_rep):
         assert (self.slot_rep is not None) or (self.slot_mask is not None), \
             'Init self.slot_rep and self.slot_mask before calling self.foward()!'
-        
+
+        cand_rep = self._adapt_var(cand_rep)
         instc_score = self._match(cand_rep, self.slot_rep, instc_mask=self.slot_mask)
         group_score = self._pool(instc_score, instc_mask=self.slot_mask)  # d_batch * 1
         group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
