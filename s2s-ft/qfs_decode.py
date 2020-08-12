@@ -273,8 +273,8 @@ def load_discriminator(args):
         model.half()
     
     model.cuda()
-    if args.n_gpu > 1:
-        model = torch.nn.DataParallel(model)
+    # if args.n_gpu > 1:
+    #     model = torch.nn.DataParallel(model)
 
     model.eval()
     return model, tokenizer
@@ -397,12 +397,17 @@ def main():
                 'tokenizer': marge_tokenizer,
             }
             query_batch = query_pipe.get_query_tensors(**query_parmas)
-            discriminator.init_slot_rep(**query_batch)
-
+            # discriminator.init_slot_rep(**query_batch)
             traces = model(input_ids, token_type_ids, position_ids, input_mask, 
                 task_idx=task_idx, 
                 mask_qkv=mask_qkv, 
-                discriminator=discriminator)
+                discriminator=discriminator,
+                summ_id=query_batch['summ_id'],
+                summ_seg_id=query_batch['summ_seg_id'],
+                summ_mask=query_batch['summ_mask'],
+                slot_id=query_batch['slot_id'],
+                slot_mask=query_batch['slot_mask'])
+            
             if args.beam_size > 1:
                 traces = {k: v.tolist() for k, v in traces.items()}
                 output_ids = traces['pred_seq']

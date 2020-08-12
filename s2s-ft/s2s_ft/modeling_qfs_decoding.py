@@ -2122,7 +2122,9 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         
         return log_scores, new_embedding, new_encoded_layers
     
-    def forward(self, input_ids, token_type_ids, position_ids, attention_mask, task_idx=None, mask_qkv=None, discriminator=None):
+    def forward(self, input_ids, token_type_ids, position_ids, attention_mask, task_idx=None, mask_qkv=None, 
+            discriminator=None,
+            summ_id=None, summ_seg_id=None, summ_mask=None, slot_id=None, slot_mask=None):
         assert self.search_beam_size > 1
         input_shape = list(input_ids.size())
         batch_size = input_shape[0]
@@ -2155,6 +2157,15 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         embedding_grad_norm = None
         
         loss_in_time = []
+        
+        query_batch = {
+            'summ_id': summ_id,
+            'summ_seg_id': summ_seg_id,
+            'summ_mask': summ_mask,
+            'slot_id': slot_id,
+            'slot_mask': slot_mask,
+        }
+        discriminator.init_slot_rep(**query_batch)
 
         while next_pos < output_length:
             is_first = (prev_embedding is None)  # TODO check if moving forward this line matters 
