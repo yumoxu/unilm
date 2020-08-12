@@ -1043,6 +1043,8 @@ class MargeDiscriminator(nn.Module):
         slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
         print(f'slot_rep: {slot_rep.dtype}')
         self.slot_mask = self._adapt_var(slot_mask)
+        print(f'self.slot_mask: {self.slot_mask.dtype}')
+        
         self.slot_rep = slot_rep * self.slot_mask[:, :, None]
         # if self.fp16:
         #     self.slot_rep = slot_rep * slot_mask[:, :, None].half()
