@@ -980,10 +980,21 @@ class MargeDiscriminator(nn.Module):
         :return:
             score: d_batch * max_ns
         """
-        d_embed = cand_rep.size()[-1]
         cand_rep = torch.unsqueeze(cand_rep, dim=-1)  # d_batch * d_embed * 1
-        instc_score_in = torch.matmul(slot_rep, cand_rep)  # d_batch * max_ns * 1
-        instc_score_in = torch.squeeze(instc_score_in, dim=-1) / np.sqrt(self.hidden_size)  # d_batch * max_ns
+
+        # TODO cand_rep's d_batch can be original d_batch * K
+        K = cand_rep.size(0) / slot_rep.size(0)
+        if K > 1:
+            d_embed = cand_rep.size(-1)
+            d_batch = slot_rep.size(0)
+            slot_rep = torch.unsqueeze(slot_rep, dim=1) # d_batch * 1 * max_ns * d_embed
+            cand_rep = torch.reshape(cand_rep, [d_batch, K, d_embed, 1])  # d_batch * K * d_embed * 1
+            instc_score_in = torch.matmul(slot_rep, cand_rep)  # d_batch * K * max_ns * 1
+            instc_score_in = torch.squeeze(instc_score_in, dim=-1) / np.sqrt(self.hidden_size)  # d_batch * K * max_ns
+            instc_score_in = torch.reshape(instc_score_in, [d_batch * K, max_ns])
+        else:
+            instc_score_in = torch.matmul(slot_rep, cand_rep)  # d_batch * max_ns * 1
+            instc_score_in = torch.squeeze(instc_score_in, dim=-1) / np.sqrt(self.hidden_size)  # d_batch * max_ns
 
         instc_score = torch.sigmoid(instc_score_in)
         instc_score = instc_score * instc_mask
