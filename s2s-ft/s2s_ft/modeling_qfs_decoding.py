@@ -986,10 +986,6 @@ class MargeDiscriminator(nn.Module):
         instc_score_in = torch.squeeze(instc_score_in, dim=-1) / np.sqrt(self.hidden_size)  # d_batch * max_ns
 
         instc_score = torch.sigmoid(instc_score_in)
-        # if self.fp16:
-        #     instc_score = instc_score * instc_mask.half()
-        # else:
-            # instc_score = instc_score * instc_mask.float()
         instc_score = instc_score * instc_mask
         return instc_score
     
@@ -1032,28 +1028,6 @@ class MargeDiscriminator(nn.Module):
         # print(f'label: {label.size()}, pred: {pred.size()}')
         loss = MSELoss()(pred, label)
         return loss
-
-    def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
-        # print(f'[init_slot_rep] summ_id: {type(summ_id)}, {summ_id}')
-        max_summ_seq_len = summ_id.size(1)
-        
-        summ_rep = self.bert_model(summ_id, 
-            token_type_ids=summ_seg_id, 
-            attention_mask=summ_mask)[0].view(-1, max_summ_seq_len, self.hidden_size)
-
-        # select class reps
-        slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
-        # print(f'slot_rep: {slot_rep.dtype}')
-        self.slot_mask = self._adapt_var(slot_mask)
-        # print(f'self.slot_mask: {self.slot_mask.dtype}')
-        self.slot_rep = slot_rep * self.slot_mask[:, :, None]
-        # if self.fp16:
-        #     self.slot_rep = slot_rep * slot_mask[:, :, None].half()
-        #     self.slot_mask = slot_mask.half()
-        # else:
-        #     self.slot_rep = slot_rep * slot_mask[:, :, None].float()
-        #     self.slot_mask = slot_mask.float()
-        # self.slot_rep = self._adapt_var(slot_rep)
     
     def get_rand_slot_rep(self, d_batch, max_n_slot):
         """
@@ -1065,22 +1039,6 @@ class MargeDiscriminator(nn.Module):
     # def _forward(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask, cand_rep):
     #     if self.new_batch or self.slot_rep is None:  # only update for new data
     #         self.get_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
-    def forward(self, cand_rep):
-        assert (self.slot_rep is not None) or (self.slot_mask is not None), \
-            'Init self.slot_rep and self.slot_mask before calling self.foward()!'
-
-        cand_rep = self._adapt_var(cand_rep)
-        instc_score = self._match(cand_rep, self.slot_rep, instc_mask=self.slot_mask)
-        group_score = self._pool(instc_score, instc_mask=self.slot_mask)  # d_batch * 1
-        group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
-
-        if self.loss_idx >= 0:
-            pred = instc_score[self.loss_idx]
-            loss = self.get_loss(pred=instc_score[self.loss_idx])
-        else:
-            loss = self.get_loss(pred=group_score)
-
-        return loss, group_score, instc_score
     
     def _forward(self, cand_rep):
         """
@@ -1107,6 +1065,45 @@ class MargeDiscriminator(nn.Module):
 
         return loss, group_score, instc_score
         # return group_score, instc_score
+    
+    def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
+        # print(f'[init_slot_rep] summ_id: {type(summ_id)}, {summ_id}')
+        max_summ_seq_len = summ_id.size(1)
+        
+        summ_rep = self.bert_model(summ_id, 
+            token_type_ids=summ_seg_id, 
+            attention_mask=summ_mask)[0].view(-1, max_summ_seq_len, self.hidden_size)
+
+        # select class reps
+        slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
+        # print(f'slot_rep: {slot_rep.dtype}')
+        self.slot_mask = self._adapt_var(slot_mask)
+        # print(f'self.slot_mask: {self.slot_mask.dtype}')
+        self.slot_rep = slot_rep * self.slot_mask[:, :, None]
+        # if self.fp16:
+        #     self.slot_rep = slot_rep * slot_mask[:, :, None].half()
+        #     self.slot_mask = slot_mask.half()
+        # else:
+        #     self.slot_rep = slot_rep * slot_mask[:, :, None].float()
+        #     self.slot_mask = slot_mask.float()
+        # self.slot_rep = self._adapt_var(slot_rep)
+    
+    def forward(self, cand_rep):
+        assert (self.slot_rep is not None) or (self.slot_mask is not None), \
+            'Init self.slot_rep and self.slot_mask before calling self.foward()!'
+
+        # cand_rep = self._adapt_var(cand_rep)
+        instc_score = self._match(cand_rep, self.slot_rep, instc_mask=self.slot_mask)
+        group_score = self._pool(instc_score, instc_mask=self.slot_mask)  # d_batch * 1
+        group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
+
+        if self.loss_idx >= 0:
+            pred = instc_score[self.loss_idx]
+            loss = self.get_loss(pred=instc_score[self.loss_idx])
+        else:
+            loss = self.get_loss(pred=group_score)
+
+        return loss, group_score, instc_score
 
 
 class BertEmbeddingsforQueryFocus(nn.Module):
