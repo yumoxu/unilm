@@ -1019,8 +1019,8 @@ class MargeDiscriminator(nn.Module):
             raise ValueError(f'Invalid pool_func: {self.pool_func}')
 
     def get_loss(self, pred):
-        pred = pred.view(-1)
-        label = torch.tensor(pred.shape[0] * [self.label], device=self.device, dtype=torch.float)
+        pred = pred.view(-1).half()
+        label = torch.tensor(pred.shape[0] * [self.label], device=self.device, dtype=torch.half)
         # print(f'label: {label.size()}, pred: {pred.size()}')
         loss = MSELoss()(pred, label)
         return loss
