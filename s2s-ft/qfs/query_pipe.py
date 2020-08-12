@@ -216,7 +216,7 @@ def get_query_tensors(start_idx,
         'tokenizer': tokenizer,
         'pad_token': 0,
         'pad_token_segment_id': 0,
-        'transformer': ToTensor()
+        'transform': ToTensor()
     }
 
     batch = features2batch(**base_params)
