@@ -394,10 +394,6 @@ def main():
                 'tokenizer': marge_tokenizer,
             }
             query_batch = query_pipe.get_query_tensors(**query_parmas)
-            for k, v in query_batch.items():
-                print(f'{k}: {v}')
-            
-            # discriminator.init_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
             discriminator.init_slot_rep(**query_batch)
 
             traces = model(input_ids, token_type_ids, position_ids, input_mask, 

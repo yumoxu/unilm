@@ -12,12 +12,12 @@ export INPUT_JSON=${QFS_PROJ_ROOT}/unilm_in/unilm_in-marge-13_config-37500_iter-
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/qfs_decode.py
 
-# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-# export OMP_NUM_THREADS=4
-# export MKL_NUM_THREADS=4
-export CUDA_VISIBLE_DEVICES=0
-export OMP_NUM_THREADS=1
-export MKL_NUM_THREADS=1
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export OMP_NUM_THREADS=4
+export MKL_NUM_THREADS=4
+# export CUDA_VISIBLE_DEVICES=0
+# export OMP_NUM_THREADS=1
+# export MKL_NUM_THREADS=1
 
 $python $python_file \
   --fp16 --model_type unilm \
