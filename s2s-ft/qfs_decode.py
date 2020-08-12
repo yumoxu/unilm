@@ -130,14 +130,29 @@ def add_generation_args(parser):
 def add_discriminator_args(parser):
     """
         Add args for discriminator.
+        Partially borrowed from MaRGE configs.
+    
     """
+    parser.add_argument('--marge_ckpt_dp', type=str, default=None,
+                        help='Checkpoint directory for pretrained MaRGE model.')
+    parser.add_argument("--max_summ_seq_len", default=96, type=int,
+                        help="The maximum total summary sequence length after tokenization. Sequences longer "
+                             "than this will be truncated, sequences shorter will be padded.")
+    parser.add_argument("--max_num_slot", default=32, type=int,
+                        help="The maximum total instances to be considered in MIL. Instances over "
+                             "this will be truncated.")
+    parser.add_argument('--slot_as_cls', action='store_true',
+                        help="Slot by default is represented with [MASK]. This argument sets it to [CLS].")
+    parser.add_argument('--add_cls_at_begin', action='store_true',
+                        help="Add [CLS] at the beginning of the masked summary sequence.")
+    parser.add_argument('--interval_segment', action='store_true',
+                        help="Use interval segment embeddings to distinguish sentences in the masked summary.")
     parser.add_argument('--disc_label', type=float, default=1.0,
                         help='The gold label for discriminator to compute loss against')
     parser.add_argument('--disc_loss_idx', type=int, default=-1,
                         help='The loss index for the discrimintor to use. -1 is for group loss and non-negative number is for instance loss.')
-    parser.add_argument('--marge_ckpt_dp', type=str, default=None,
-                        help='Checkpoint directory for pretrained MaRGE model.')
-    
+
+
 def add_pp_args(parser):
     """
         Add args for Plug-and-Play.
@@ -177,30 +192,10 @@ def add_pp_args(parser):
                         help="verbosiry level")
 
 
-def add_query_args(parser):
-    """
-        Borrowed from MaRGE training.
-
-    """
-    parser.add_argument("--max_summ_seq_len", default=96, type=int,
-                        help="The maximum total summary sequence length after tokenization. Sequences longer "
-                             "than this will be truncated, sequences shorter will be padded.")
-    parser.add_argument("--max_num_slot", default=32, type=int,
-                        help="The maximum total instances to be considered in MIL. Instances over "
-                             "this will be truncated.")
-    parser.add_argument('--slot_as_cls', action='store_true',
-                        help="Slot by default is represented with [MASK]. This argument sets it to [CLS].")
-    parser.add_argument('--add_cls_at_begin', action='store_true',
-                        help="Add [CLS] at the beginning of the masked summary sequence.")
-    parser.add_argument('--interval_segment', action='store_true',
-                        help="Use interval segment embeddings to distinguish sentences in the masked summary.")
-
-
 def parse_args(parser):
     add_generation_args(parser)
     add_discriminator_args(parser)
     add_pp_args(parser)
-    add_query_args(parser)
     
     args = parser.parse_args()
     return args
