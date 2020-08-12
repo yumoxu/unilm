@@ -4,9 +4,9 @@ from os.path import isfile, isdir, join, dirname, abspath, exists
 from os import listdir
 from pathlib import Path
 
-parent_sys_path = dirname(parent_sys_path)
-if parent_sys_path not in sys.path:
-    sys.path.insert(0, parent_sys_path)
+# parent_sys_path = dirname(parent_sys_path)
+# if parent_sys_path not in sys.path:
+#     sys.path.insert(0, parent_sys_path)
 
 from query_tools import get_cid2masked_query
 
