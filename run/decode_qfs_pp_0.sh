@@ -47,7 +47,7 @@ $python $python_file \
   --disc_label 1.0 \
   --disc_loss_idx -1 \
   --gamma 1.0 \
-  --num_iterations 10 \
+  --num_iterations 1 \
   --horizon_length 1 \
   --stepsize 0.04 \
   --kl_scale 0.01 \
