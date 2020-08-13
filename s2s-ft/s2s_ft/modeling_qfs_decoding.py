@@ -1319,7 +1319,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                  kl_scale=0.01,
                  verbosity=REGULAR,
                  device='cuda',
-                 fp16=False):
+                 fp16=False,
+                 discriminator=None):
         super(BertForQueryFocusedDecoder, self).__init__(config)
         self.bert = BertModelIncrForQueryFocus(config)
         self.cls = BertPreTrainingHeads(
@@ -1361,6 +1362,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         self.device = device
         self.fp16 = fp16
+
+        self.discriminator = discriminator
 
     def to_var(self, x, requires_grad, volatile=False):
         if torch.cuda.is_available() and self.device == 'cuda':
@@ -1640,7 +1643,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
     @torch.enable_grad()
     def perturb_past(
             self,
-            discriminator,
+            # discriminator,
             input_shape,
             token_type_ids,
             position_ids,
@@ -1828,7 +1831,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # 1 is the perturbation for the present, horizon_length is for the future
             cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
-            discrim_loss, group_score, instc_score = discriminator(cand_rep)
+            discrim_loss, group_score, instc_score = self.discriminator(cand_rep)
             if self.verbosity_level >= VERY_VERBOSE:
                 print(f'group_score: {group_score[0]}')
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
@@ -2142,7 +2145,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         return log_scores, new_embedding, new_encoded_layers
     
     def forward(self, input_ids, token_type_ids, position_ids, attention_mask, task_idx=None, mask_qkv=None, 
-            discriminator=None,
+            # discriminator=None,
             summ_id=None, summ_seg_id=None, summ_mask=None, slot_id=None, slot_mask=None):
         assert self.search_beam_size > 1
         input_shape = list(input_ids.size())
@@ -2184,7 +2187,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             'slot_id': slot_id,
             'slot_mask': slot_mask,
         }
-        discriminator.init_slot_rep(**query_batch)
+        self.discriminator.init_slot_rep(**query_batch)
 
         while next_pos < output_length:
             is_first = (prev_embedding is None)  # TODO check if moving forward this line matters 
@@ -2257,7 +2260,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                     current_stepsize = self.stepsize
 
                 perturb_params = {
-                    'discriminator': discriminator,
+                    # 'discriminator': discriminator,
                     'input_shape': input_shape,
                     'token_type_ids': token_type_ids,
                     'position_ids': position_ids,
@@ -2294,7 +2297,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
             # for unpert discrim_loss
             # TODO: implement another option: remove the last [MASK]: unpert_last_hidden[:, :-1, :]
-            unpert_discrim_loss, _, _ = discriminator(torch.mean(unpert_last_hidden, dim=1))
+            unpert_discrim_loss, _, _ = self.discriminator(torch.mean(unpert_last_hidden, dim=1))
             if self.verbosity_level >= VERY_VERBOSE:
                 print(f"unperturbed discrim loss: {unpert_discrim_loss.data.cpu().numpy()}")
 

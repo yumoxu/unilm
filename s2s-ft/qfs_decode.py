@@ -272,14 +272,14 @@ def load_discriminator(args):
     if args.fp16:
         model.half()
     
-    model.cuda()
+    # model.cuda()
     model.eval()
     for param in model.parameters():
         param.requires_grad = False
     return model, tokenizer
 
 
-def load_unilm(args):
+def load_unilm(args, discriminator):
     tokenizer = TOKENIZER_CLASSES[args.model_type].from_pretrained(
         args.tokenizer_name, do_lower_case=args.do_lower_case, 
         cache_dir=args.cache_dir if args.cache_dir else None)
@@ -327,7 +327,8 @@ def load_unilm(args):
         num_iterations=args.num_iterations, grad_length=args.grad_length, horizon_length=args.horizon_length, 
         window_length=args.window_length, decay=args.decay, 
         gamma=args.gamma, gm_scale=args.gm_scale, kl_scale=args.kl_scale,
-        verbosity=args.verbosity, device=args.device, fp16=args.fp16
+        verbosity=args.verbosity, device=args.device, fp16=args.fp16,
+        discriminator=discriminator
     )
 
     if args.fp16:
@@ -355,7 +356,7 @@ def main():
     discriminator, marge_tokenizer = load_discriminator(args)
 
     # tokenizer, config, bi_uni_pipeline, mask_word_id, eos_word_ids, sos_word_id, forbid_ignore_set = set_tokenizer(args)
-    tokenizer, model, bi_uni_pipeline, model_recover_path = load_unilm(args)
+    tokenizer, model, bi_uni_pipeline, model_recover_path = load_unilm(args, discriminator)
 
     input_lines = get_input(args, tokenizer=tokenizer)
     output_lines = [""] * len(input_lines)
@@ -399,7 +400,7 @@ def main():
                 traces = model(input_ids, token_type_ids, position_ids, input_mask, 
                     task_idx=task_idx, 
                     mask_qkv=mask_qkv, 
-                    discriminator=discriminator,
+                    # discriminator=discriminator,
                     summ_id=query_batch['summ_id'],
                     summ_seg_id=query_batch['summ_seg_id'],
                     summ_mask=query_batch['summ_mask'],
