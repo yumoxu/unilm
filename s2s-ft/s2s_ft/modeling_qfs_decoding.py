@@ -2057,9 +2057,6 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             return x_input_embeds
           
         x_input_embeds = _get_x_input_embeds()
-        if self.verbosity_level >= DEBUG:
-            print(f'start_pos: {start_pos}, next_pos: {next_pos}')
-        
         # curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
         # curr_attention_mask = attention_mask[:, start_pos:next_pos + 1, :next_pos + 1]
         # curr_position_ids = position_ids[:, start_pos:next_pos + 1]
