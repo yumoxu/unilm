@@ -1839,7 +1839,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             cand_rep = new_accumulated_hidden / (curr_length + 1 + self.horizon_length)
             discrim_loss, group_score, instc_score = discriminator(cand_rep)
             if self.verbosity_level >= VERY_VERBOSE:
-                print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
+                print(f'group_score: {group_score[0]}')
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
             loss += discrim_loss
             # loss_list.append(discrim_loss)
