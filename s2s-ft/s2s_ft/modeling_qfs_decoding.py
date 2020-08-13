@@ -1057,7 +1057,7 @@ class MargeDiscriminator(nn.Module):
     #     if self.new_batch or self.slot_rep is None:  # only update for new data
     #         self.get_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
     
-    def forward(self, cand_rep):
+    def _forward_0(self, cand_rep):
         """
             
             For unit test. Forward with random slot representations. 
@@ -1081,7 +1081,20 @@ class MargeDiscriminator(nn.Module):
             loss = self.get_loss(pred=group_score)
 
         return loss, group_score, instc_score
-        # return group_score, instc_score
+
+    def forward(self, cand_rep):
+        """
+            
+            For unit test. Forward with random scores.
+
+            cand_rep: d_batch * d_embed
+        """
+        cand_rep = torch.sigmoid(cand_rep)
+        group_score = torch.max(cand_rep, dim=-1)[0]  # d_batch * 1
+        group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
+        loss = self.get_loss(pred=group_score)
+
+        return loss, group_score, None
     
     def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
         # print(f'[init_slot_rep] summ_id: {type(summ_id)}, {summ_id}')
