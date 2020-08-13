@@ -1057,7 +1057,7 @@ class MargeDiscriminator(nn.Module):
     #     if self.new_batch or self.slot_rep is None:  # only update for new data
     #         self.get_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
     
-    def _forward_0(self, cand_rep):
+    def _forward_unit_test_0(self, cand_rep):
         """
             
             For unit test. Forward with random slot representations. 
@@ -1082,7 +1082,7 @@ class MargeDiscriminator(nn.Module):
 
         return loss, group_score, instc_score
 
-    def forward(self, cand_rep):
+    def _forward_unit_test_1(self, cand_rep):
         """
             
             For unit test. Forward with random scores.
@@ -1097,30 +1097,19 @@ class MargeDiscriminator(nn.Module):
         return loss, group_score, None
     
     def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
-        # print(f'[init_slot_rep] summ_id: {type(summ_id)}, {summ_id}')
         max_summ_seq_len = summ_id.size(1)
         
         summ_rep = self.bert_model(summ_id, 
             token_type_ids=summ_seg_id, 
             attention_mask=summ_mask)[0].view(-1, max_summ_seq_len, self.hidden_size)
 
-        # FIXME try to detach bert_model if the memory still exceeds
         # select class reps
         slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
-        # print(f'slot_rep: {slot_rep.dtype}')
         self.slot_mask = self._adapt_var(slot_mask)
-        # print(f'self.slot_mask: {self.slot_mask.dtype}')
         self.slot_rep = slot_rep * self.slot_mask[:, :, None]
         self.slot_rep.detach()
-        # if self.fp16:
-        #     self.slot_rep = slot_rep * slot_mask[:, :, None].half()
-        #     self.slot_mask = slot_mask.half()
-        # else:
-        #     self.slot_rep = slot_rep * slot_mask[:, :, None].float()
-        #     self.slot_mask = slot_mask.float()
-        # self.slot_rep = self._adapt_var(slot_rep)
     
-    def _forward(self, cand_rep):
+    def forward(self, cand_rep):
         assert (self.slot_rep is not None) or (self.slot_mask is not None), \
             'Init self.slot_rep and self.slot_mask before calling self.foward()!'
 
