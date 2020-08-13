@@ -1814,7 +1814,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             probs = F.softmax(logits, dim=-1)
 
             loss = 0.0
-            loss_list = []
+            # loss_list = []
 
             if self.horizon_length == 1:  # obtain future hideen states
                 # as input, use the last expected embedding (intead of actual embedding of a token)
@@ -1842,7 +1842,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
                 print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
                 print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
             loss += discrim_loss
-            loss_list.append(discrim_loss)
+            # loss_list.append(discrim_loss)
 
             kl_loss = 0.0
             if self.kl_scale > 0.0:
