@@ -31,14 +31,14 @@ $python $python_file \
   --model_path ${UNILM_MODEL_PATH} \
   --model_ckpt ${UNILM_CKPT} \
   --max_seq_length 768 \
-  --max_tgt_length 300 \
+  --max_tgt_length 5 \
   --batch_size 16 \
   --beam_size 5 \
   --length_penalty 0.9 \
   --forbid_duplicate_ngrams \
   --mode s2s \
   --forbid_ignore_word "." \
-  --min_len 400 \
+  --min_len 5 \
   --marge_ckpt_dp ${MARGE_CKPT_PATH}\
   --year='2005' \
   --max_summ_seq_len=96 \

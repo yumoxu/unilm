@@ -2244,49 +2244,51 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             
             unpert_last_hidden = get_unpert_last_hidden(new_encoded_layers, 
                 prev_encoded_layers, is_first=is_first)
-            accumulated_hidden = get_accumulated_hidden(unpert_last_hidden, is_first=is_first)
+            
+            if next_pos < output_length - 1:
+                accumulated_hidden = get_accumulated_hidden(unpert_last_hidden, is_first=is_first)
 
-            # check if we are abowe grad max length
-            if next_pos >= self.grad_length:
-                current_stepsize = self.stepsize * 0
-            else:
-                current_stepsize = self.stepsize
+                # check if we are abowe grad max length
+                if next_pos >= self.grad_length:
+                    current_stepsize = self.stepsize * 0
+                else:
+                    current_stepsize = self.stepsize
 
-            perturb_params = {
-                'discriminator': discriminator,
-                'input_shape': input_shape,
-                'token_type_ids': token_type_ids,
-                'position_ids': position_ids,
-                'attention_mask': attention_mask,
-                'task_idx': task_idx,
-                'mask_qkv': mask_qkv,
-                'stepsize': current_stepsize,
-                'curr_ids': curr_ids,
-                'next_pos': next_pos,
-                'prev_embedding': prev_embedding,
-                'prev_encoded_layers': prev_encoded_layers,
-                'new_embedding': new_embedding,
-                'new_encoded_layers': new_encoded_layers,
-                'unpert_logits': unpert_logits,
-                'accumulated_hidden': accumulated_hidden,
-                'layer_grad_norms': layer_grad_norms,
-                'embedding_grad_norm': embedding_grad_norm,
-                'mask_ids': mask_ids,
-                'sos_ids': sos_ids,
-            }
-            if self.verbosity_level >= DEBUG:
-                print(f'POS {next_pos}: perturb model')
-            pert_past, _, layer_grad_norms, embedding_grad_norm, loss_this_iter = self.perturb_past(**perturb_params)
-            loss_in_time.append(loss_this_iter)
+                perturb_params = {
+                    'discriminator': discriminator,
+                    'input_shape': input_shape,
+                    'token_type_ids': token_type_ids,
+                    'position_ids': position_ids,
+                    'attention_mask': attention_mask,
+                    'task_idx': task_idx,
+                    'mask_qkv': mask_qkv,
+                    'stepsize': current_stepsize,
+                    'curr_ids': curr_ids,
+                    'next_pos': next_pos,
+                    'prev_embedding': prev_embedding,
+                    'prev_encoded_layers': prev_encoded_layers,
+                    'new_embedding': new_embedding,
+                    'new_encoded_layers': new_encoded_layers,
+                    'unpert_logits': unpert_logits,
+                    'accumulated_hidden': accumulated_hidden,
+                    'layer_grad_norms': layer_grad_norms,
+                    'embedding_grad_norm': embedding_grad_norm,
+                    'mask_ids': mask_ids,
+                    'sos_ids': sos_ids,
+                }
+                if self.verbosity_level >= DEBUG:
+                    print(f'POS {next_pos}: perturb model')
+                pert_past, _, layer_grad_norms, embedding_grad_norm, loss_this_iter = self.perturb_past(**perturb_params)
+                loss_in_time.append(loss_this_iter)
 
-            if self.verbosity_level >= DEBUG:
-                print(f'POS {next_pos}: foward pass with perturbed history')
-            step_params['prev_embedding'] = pert_past['embedding']
-            step_params['prev_encoded_layers'] = pert_past['layers']
-            pert_logits, pert_embedding, pert_layers = self.step(**step_params)
-            # log_scores = pert_logits[:, -1, :] / self.temperature  # + SMALL_CONST
-            # log_scores = pert_logits / self.temperature
-            # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
+                if self.verbosity_level >= DEBUG:
+                    print(f'POS {next_pos}: foward pass with perturbed history')
+                step_params['prev_embedding'] = pert_past['embedding']
+                step_params['prev_encoded_layers'] = pert_past['layers']
+                pert_logits, pert_embedding, pert_layers = self.step(**step_params)
+                # log_scores = pert_logits[:, -1, :] / self.temperature  # + SMALL_CONST
+                # log_scores = pert_logits / self.temperature
+                # pert_probs = F.softmax(pert_logits, dim=-1)  # vocab distribution from modified model
 
             # for unpert discrim_loss
             # TODO: implement another option: remove the last [MASK]: unpert_last_hidden[:, :-1, :]
@@ -2298,7 +2300,10 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
             # Original way is to fuse the two distributions (after softmax)
             # Here beam search does not need softmax so we do this with logits
             # log_scores = (pert_logits ** self.gm_scale) * (logits ** (1 - self.gm_scale))
-            log_scores = self.gm_scale * pert_logits + (1 - self.gm_scale) * unpert_logits
+            if next_pos < output_length - 1:
+                log_scores = self.gm_scale * pert_logits + (1 - self.gm_scale) * unpert_logits
+            else:
+                log_scores = unpert_logits
 
             # proc predictions: forbid pre-defined words; forbid EOS when the min_len is not achieved
             if forbid_word_mask is not None:
