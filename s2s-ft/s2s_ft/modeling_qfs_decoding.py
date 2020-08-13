@@ -983,7 +983,6 @@ class MargeDiscriminator(nn.Module):
        
         cand_rep = torch.unsqueeze(cand_rep, dim=-1)  # d_batch * d_embed * 1
 
-        # TODO cand_rep's d_batch can be original d_batch * K
         K = int(cand_rep.size(0) / slot_rep.size(0))
         if K > 1:
             d_embed = cand_rep.size(-2)
@@ -1058,7 +1057,7 @@ class MargeDiscriminator(nn.Module):
     #     if self.new_batch or self.slot_rep is None:  # only update for new data
     #         self.get_slot_rep(summ_id, summ_seg_id, summ_mask, slot_id, slot_mask)
     
-    def _forward(self, cand_rep):
+    def forward(self, cand_rep):
         """
             
             For unit test. Forward with random slot representations. 
@@ -1073,7 +1072,7 @@ class MargeDiscriminator(nn.Module):
         # instc_score = self._match(cand_rep, slot_rep, instc_mask=slot_mask)
         group_score = self._pool(instc_score)  # d_batch * 1
         group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
-        print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
+        # print(f'group_score: {group_score[0]}\ninstc_score: {instc_score[0]}')
 
         if self.loss_idx >= 0:
             pred = instc_score[self.loss_idx]
@@ -1108,7 +1107,7 @@ class MargeDiscriminator(nn.Module):
         #     self.slot_mask = slot_mask.float()
         # self.slot_rep = self._adapt_var(slot_rep)
     
-    def forward(self, cand_rep):
+    def _forward(self, cand_rep):
         assert (self.slot_rep is not None) or (self.slot_mask is not None), \
             'Init self.slot_rep and self.slot_mask before calling self.foward()!'
 
@@ -1740,6 +1739,7 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         print(f'curr_length: {curr_length}')
 
         if curr_length > self.window_length and self.window_length > 0:
+            # FIXME the order of concatenation? should it be zeros first, and then ones?
             d_batch, _, d_hidden = past['embedding'].size()
             ones_key_val_shape = (d_batch, self.window_length, d_hidden)
             zeros_key_val_shape = (d_batch, curr_length - self.window_length, d_hidden)
