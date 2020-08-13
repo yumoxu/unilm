@@ -190,7 +190,7 @@ def add_pp_args(parser):
     parser.add_argument("--no_cuda", action="store_true", help="no cuda")
     parser.add_argument("--verbosity", type=str, default="very_verbose",
                         choices=(
-                            "quiet", "regular", "verbose", "very_verbose"),
+                            "quiet", "regular", "verbose", "very_verbose", "debug"),
                         help="verbosiry level")
 
 
