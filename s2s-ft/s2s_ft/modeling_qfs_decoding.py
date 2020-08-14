@@ -1442,7 +1442,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
 
         # Generate a mask is gradient perturbated is based on a past window
         curr_length = embedding_grad_accumulator.shape[-2]  # current history length (context + generation so far)
-        print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
+        if self.verbosity_level >= VERBOSE:
+            print(f'curr_length: {curr_length}, embedding_grad_accumulator shape: {embedding_grad_accumulator.shape}')
 
         if curr_length > self.window_length and self.window_length > 0:
             d_batch, _, d_hidden = unpert_embedding.size()
@@ -1742,7 +1743,8 @@ class BertForQueryFocusedDecoder(PreTrainedBertModel):
         # curr_length = grad_accumulator['embedding'].shape[-2]  
         # current history length (context + generation so far)
         curr_length = past['embedding'].shape[-2]
-        print(f'curr_length: {curr_length}')
+        if self.verbosity_level >= REGULAR:
+            print(f'curr_length: {curr_length}')
 
         if curr_length > self.window_length and self.window_length > 0:
             # FIXME the order of concatenation? should it be zeros first, and then ones?
