@@ -380,14 +380,14 @@ def main():
             for instance in [(x, max_a_len) for x in buf]:
                 for proc in bi_uni_pipeline:   # can ignore this loop; there is only one Preprocess4Seq2seqDecoder in the pipeline
                     instances.append(proc(instance))
-
+            
+            cids = cc_ids[next_i:next_i + args.batch_size]
+            next_i += args.batch_size
             with torch.no_grad():
                 batch = seq2seq_loader.batch_list_to_batch_tensors(instances)
                 batch = [t.to(args.device) if t is not None else None for t in batch]
                 input_ids, token_type_ids, position_ids, input_mask, mask_qkv, task_idx = batch
-                cids = cc_ids[next_i:next_i + args.batch_size]
-                next_i += args.batch_size
-
+                
                 query_parmas = {
                     'cids': cids,
                     'query_type': 'narr',
