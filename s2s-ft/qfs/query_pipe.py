@@ -204,9 +204,7 @@ def get_test_cc_ids(year):
     return all_cc_ids
 
 
-def get_query_tensors(start_idx, 
-        end_idx, 
-        year,
+def get_query_tensors(cids,
         query_type, 
         max_summ_seq_len, 
         max_num_slot, 
@@ -218,8 +216,7 @@ def get_query_tensors(start_idx,
     """
     assert query_type
     query_dict = get_cid2masked_query(query_type)
-    cids = get_test_cc_ids(year)[start_idx:end_idx]
-    queries =  [query_dict[cid] for cid in cids]
+    queries = [query_dict[cid] for cid in cids]
 
     base_params = {
         'queries': queries,
