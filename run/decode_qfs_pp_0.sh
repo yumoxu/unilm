@@ -31,14 +31,14 @@ $python $python_file \
   --model_path ${UNILM_MODEL_PATH} \
   --model_ckpt ${UNILM_CKPT} \
   --max_seq_length 768 \
-  --max_tgt_length 3 \
+  --max_tgt_length 300 \
   --batch_size 16 \
   --beam_size 5 \
   --length_penalty 0.9 \
   --forbid_duplicate_ngrams \
   --mode s2s \
   --forbid_ignore_word "." \
-  --min_len 5 \
+  --min_len 300 \
   --marge_ckpt_dp ${MARGE_CKPT_PATH}\
   --year='2005' \
   --max_summ_seq_len=96 \
@@ -47,9 +47,9 @@ $python $python_file \
   --disc_label 1.0 \
   --disc_loss_idx -1 \
   --gamma 1.0 \
-  --num_iterations 3 \
+  --num_iterations 10 \
   --horizon_length 1 \
   --stepsize 0.04 \
   --kl_scale 0.01 \
   --gm_scale 0.95 \
-  --verbosity "verbose" \
+  --verbosity "regular" \
