@@ -1099,32 +1099,31 @@ class MargeDiscriminator(nn.Module):
     def init_slot_rep(self, summ_id, summ_seg_id, summ_mask, slot_id, slot_mask):
         max_summ_seq_len = summ_id.size(1)
         
-        with torch.cuda.device(0):
-            summ_rep = self.bert_model(summ_id, 
-                token_type_ids=summ_seg_id, 
-                attention_mask=summ_mask)[0].view(-1, max_summ_seq_len, self.hidden_size)
+        # with torch.cuda.device(0):
+        summ_rep = self.bert_model(summ_id, 
+            token_type_ids=summ_seg_id, 
+            attention_mask=summ_mask)[0].view(-1, max_summ_seq_len, self.hidden_size)
 
-            # select class reps
-            slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
-            self.slot_mask = self._adapt_var(slot_mask)
-            self.slot_rep = slot_rep * self.slot_mask[:, :, None]
-            self.slot_rep.detach()
+        # select class reps
+        slot_rep = summ_rep[torch.arange(summ_rep.size(0)).unsqueeze(1), slot_id]
+        self.slot_mask = self._adapt_var(slot_mask)
+        self.slot_rep = slot_rep * self.slot_mask[:, :, None]
+        self.slot_rep.detach()
     
     def forward(self, cand_rep):
         assert (self.slot_rep is not None) or (self.slot_mask is not None), \
             'Init self.slot_rep and self.slot_mask before calling self.foward()!'
 
-        # cand_rep = self._adapt_var(cand_rep)
-        with torch.cuda.device(0):
-            instc_score = self._match(cand_rep, self.slot_rep, instc_mask=self.slot_mask)
-            group_score = self._pool(instc_score, instc_mask=self.slot_mask)  # d_batch * 1
-            group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
+        # with torch.cuda.device(0):
+        instc_score = self._match(cand_rep, self.slot_rep, instc_mask=self.slot_mask)
+        group_score = self._pool(instc_score, instc_mask=self.slot_mask)  # d_batch * 1
+        group_score = torch.clamp(group_score, min=self.eps, max=1-self.eps)  # in (0, 1)
 
-            if self.loss_idx >= 0:
-                pred = instc_score[self.loss_idx]
-                loss = self.get_loss(pred=instc_score[self.loss_idx])
-            else:
-                loss = self.get_loss(pred=group_score)
+        if self.loss_idx >= 0:
+            pred = instc_score[self.loss_idx]
+            loss = self.get_loss(pred=instc_score[self.loss_idx])
+        else:
+            loss = self.get_loss(pred=group_score)
 
         return loss, group_score, instc_score
 
