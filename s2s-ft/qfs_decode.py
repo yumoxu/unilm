@@ -396,11 +396,13 @@ def main():
                     'tokenizer': marge_tokenizer,
                 }
                 query_batch = query_pipe.get_query_tensors(**query_parmas)
+                summ_id = query_batch['summ_id']
+                print(f'summ_id: {summ_id}')
+                continue
 
                 traces = model(input_ids, token_type_ids, position_ids, input_mask, 
                     task_idx=task_idx, 
                     mask_qkv=mask_qkv, 
-                    # discriminator=discriminator,
                     summ_id=query_batch['summ_id'],
                     summ_seg_id=query_batch['summ_seg_id'],
                     summ_mask=query_batch['summ_mask'],
@@ -427,8 +429,8 @@ def main():
                     if '\n' in output_sequence:
                         output_sequence = " [X_SEP] ".join(output_sequence.split('\n'))
                     output_lines[buf_id[i]] = output_sequence
-                    if first_batch or batch_count % 50 == 0:
-                        logger.info("{} = {}".format(buf_id[i], output_sequence))
+                    # if first_batch or batch_count % 50 == 0:
+                    logger.info("{} = {}".format(buf_id[i], output_sequence))
                     if args.need_score_traces:
                         score_trace_list[buf_id[i]] = {
                             'scores': traces['scores'][i], 'wids': traces['wids'][i], 'ptrs': traces['ptrs'][i]}
