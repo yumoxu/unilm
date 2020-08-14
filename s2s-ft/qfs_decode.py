@@ -399,9 +399,9 @@ def main():
                     'tokenizer': marge_tokenizer,
                 }
                 query_batch = query_pipe.get_query_tensors(**query_parmas)
-                summ_id = query_batch['summ_id']
-                print(f'summ_id: {summ_id}')
-                continue
+                # summ_id = query_batch['summ_id']
+                # print(f'summ_id: {summ_id}')
+                # continue
 
                 traces = model(input_ids, token_type_ids, position_ids, input_mask, 
                     task_idx=task_idx, 
