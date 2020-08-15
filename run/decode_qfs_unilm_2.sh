@@ -1,9 +1,9 @@
 export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 
-export SPLIT=qfs
+export SPLIT=marge-13_config-37500_iter-narr-ir-dial-tf-2005-global_pos
 export MODEL_PATH=$PROJ_PATH/model/unilm_2
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
-export INPUT_JSON=${QFS_PROJ_ROOT}/unilm_in/unilm_in-marge-13_config-37500_iter-narr-ir-dial-tf-2005.json
+export INPUT_JSON=${QFS_PROJ_ROOT}/unilm_in/unilm_in-${SPLIT}.json
 
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export OMP_NUM_THREADS=4
@@ -21,7 +21,7 @@ $python $python_file \
   --split ${SPLIT} \
   --model_path ${MODEL_PATH} \
   --model_ckpt ${CKPT} \
-  --max_seq_length 768 \
+  --max_seq_length 812 \
   --max_tgt_length 300 \
   --batch_size 32 \
   --beam_size 5 \
@@ -29,4 +29,4 @@ $python $python_file \
   --forbid_duplicate_ngrams \
   --mode s2s \
   --forbid_ignore_word "." \
-  --min_len 400
+  --min_len 300
