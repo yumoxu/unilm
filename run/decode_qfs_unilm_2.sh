@@ -22,7 +22,7 @@ $python $python_file \
   --split ${SPLIT} \
   --model_path ${MODEL_PATH} \
   --model_ckpt ${CKPT} \
-  --max_seq_length 1070 \
+  --max_seq_length 1068 \
   --max_tgt_length 300 \
   --batch_size 8 \
   --beam_size 5 \
