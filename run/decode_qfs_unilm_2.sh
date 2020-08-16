@@ -7,8 +7,8 @@ export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
 export INPUT_JSON=${QFS_PROJ_ROOT}/unilm_in/unilm_in-${INPUT_FILE_NAME}.json
 
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export OMP_NUM_THREADS=1
-export MKL_NUM_THREADS=1
+export OMP_NUM_THREADS=4
+export MKL_NUM_THREADS=4
 
 export CKPT=33000
 export python=$PROJ_PATH/bin/python
@@ -24,7 +24,7 @@ $python $python_file \
   --model_ckpt ${CKPT} \
   --max_seq_length 1068 \
   --max_tgt_length 300 \
-  --batch_size 8 \
+  --batch_size 32 \
   --beam_size 5 \
   --length_penalty 0.9 \
   --forbid_duplicate_ngrams \
