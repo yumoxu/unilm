@@ -30,7 +30,7 @@ $python $python_file \
   --split ${SPLIT} \
   --model_path ${UNILM_MODEL_PATH} \
   --model_ckpt ${UNILM_CKPT} \
-  --max_seq_length 768 \
+  --max_seq_length 1168 \
   --max_tgt_length 400 \
   --batch_size 32 \
   --beam_size 5 \
