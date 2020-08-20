@@ -1,6 +1,6 @@
 export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 export SPLIT=val
-export GOLD_PATH=${PROJ_PATH}/data/multinews/${SPLIT}.json
+export GOLD_PATH=${PROJ_PATH}/data/multinews-250/${SPLIT}.json
 export CKPT=*
 export PRED_PATH="${PROJ_PATH}/model/unilm_4/ckpt-*.${SPLIT}"
 export python=$PROJ_PATH/bin/python
