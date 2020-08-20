@@ -12,8 +12,8 @@ export INPUT_JSON=${QFS_PROJ_ROOT}/unilm_in/unilm_in-marge-13_config-37500_iter-
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/qfs_decode.py
 
-# export CUDA_VISIBLE_DEVICES=0,1,2,3,4
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 # export OMP_NUM_THREADS=2
 # export MKL_NUM_THREADS=2
 export OMP_NUM_THREADS=4
@@ -32,7 +32,7 @@ $python $python_file \
   --model_ckpt ${UNILM_CKPT} \
   --max_seq_length 1168 \
   --max_tgt_length 400 \
-  --batch_size 32 \
+  --batch_size 16 \
   --beam_size 5 \
   --length_penalty 0.9 \
   --forbid_duplicate_ngrams \
@@ -49,7 +49,7 @@ $python $python_file \
   --gamma 1.0 \
   --num_iterations 5 \
   --horizon_length 1 \
-  --stepsize 0.1 \
+  --stepsize 1.0 \
   --kl_scale 0.01 \
   --gm_scale 0.95 \
   --verbosity "regular" \
