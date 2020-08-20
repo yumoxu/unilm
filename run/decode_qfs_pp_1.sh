@@ -1,5 +1,5 @@
 export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
-export SPLIT=qfs
+export SPLIT=qfs-step_1.0
 export UNILM_MODEL_PATH=$PROJ_PATH/model/unilm_4
 export UNILM_CKPT=4500
 
