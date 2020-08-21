@@ -18,7 +18,7 @@ RANK_MODE = 'gold'
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank'
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 
 
 METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
@@ -102,7 +102,7 @@ def build():
                 sentence_objs.append(so)
                 cid = _cid
     
-    print.info(f'Sucessfully dump {DATASET_VAR} set to: {dump_fp}!')
+    print(f'Sucessfully dump {DATASET_VAR} set to: {dump_fp}!')
 
 
 if __name__ == "__main__":
