@@ -44,7 +44,7 @@ def _rank_sentence_objs(sentence_objs, metric):
 
 
 def build():
-    rouge_fp = SHIFTSUM_ROOT / 'multinews_rouge' / f'{DATASET_VAR}.json'
+    rouge_fp = SHIFTSUM_ROOT / 'rouge' / f'{DATASET_VAR}.json'
     cid2summary = get_cid2summary()
 
     dump_fp = FINAL_DATA_DIR / f'{DATASET_VAR}.json'
