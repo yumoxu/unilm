@@ -16,11 +16,11 @@ RANK_MODE = 'gold'
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank'
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val'
+DATASET_VAR = 'val' 
 
 
 def get_cid2summary():
-    masked_summary_fp = SHIFTSUM_ROOT / 'masked_mn_summary' / f'{DATASET_VAR}.json'
+    masked_summary_fp = SHIFTSUM_ROOT / 'masked_mn_summary' / f'{DATASET_VAR}-sample-max_reveal_1.0.json'
     cid = 0
     cid2summary = {}
     with open(masked_summary_fp) as masked_summary_f:
