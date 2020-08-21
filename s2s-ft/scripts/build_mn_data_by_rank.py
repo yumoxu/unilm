@@ -72,7 +72,7 @@ def build():
                     ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC)
 
                     if cid % 500 == 0:
-                        logger.info(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
+                        print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
                     
                     tgt = cid2summary[cid]
 
@@ -102,7 +102,7 @@ def build():
                 sentence_objs.append(so)
                 cid = _cid
     
-    logger.info(f'Sucessfully dump {DATASET_VAR} set to: {dump_fp}!')
+    print.info(f'Sucessfully dump {DATASET_VAR} set to: {dump_fp}!')
 
 
 if __name__ == "__main__":
