@@ -77,7 +77,7 @@ def build():
                     tgt = cid2summary[cid]
 
                     to_save = True
-                    if TGT_MIN_WORDS and len(nltk.tokenize.word_tokenize(tgt)) >= TGT_MIN_WORDS:
+                    if TGT_MIN_WORDS and len(nltk.tokenize.word_tokenize(tgt)) < TGT_MIN_WORDS:
                         to_save = False
 
                     if to_save:
