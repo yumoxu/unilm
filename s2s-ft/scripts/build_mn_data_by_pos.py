@@ -2,10 +2,17 @@ import io
 from pathlib import Path
 from tqdm import tqdm
 import json
+import nltk
 
 DATA_ROOT = Path('/Users/KevinXU/Programming/git_yumoxu/unilm/data')
 TRUNCATED_DATA_ROOT = DATA_ROOT / 'multinews_truncated'
-FINAL_DATA_DIR = DATA_ROOT / 'multinews'
+
+TGT_MIN_WORDS = 250
+if TGT_MIN_WORDS:
+    FINAL_DATA_DIR = DATA_ROOT / f'multinews-{TGT_MIN_WORDS}'
+else:
+    FINAL_DATA_DIR = DATA_ROOT / 'multinews'
+
 DATASET_VAR = 'test'
 
 
@@ -18,12 +25,19 @@ def build():
     tgt_text = io.open(tgt_fp).readlines()
     with io.open(dump_fp, mode='a') as dump_f:
         for i in tqdm(range(len(src_text))):
+            tgt = tgt_text[i].strip('\n')[2:]
+
+            if TGT_MIN_WORDS:
+                if len(nltk.tokenize.word_tokenize(tgt)) < TGT_MIN_WORDS:
+                    continue
+            
             json_obj = {
                 "src": src_text[i].strip('\n'),
-                "tgt": tgt_text[i].strip('\n')[2:]
+                "tgt": tgt,
             }
             json_str = json.dumps(json_obj, ensure_ascii=False)
             dump_f.write(f'{json_str}\n')
+
 
 if __name__ == "__main__":
     build()
