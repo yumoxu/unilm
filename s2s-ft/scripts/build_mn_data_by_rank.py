@@ -18,7 +18,7 @@ RANK_MODE = 'gold'
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank'
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'train' 
+DATASET_VAR = 'val' 
 
 METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
 
