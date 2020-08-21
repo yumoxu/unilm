@@ -19,6 +19,13 @@ FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 DATASET_VAR = 'val' 
 
 
+METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
+
+if exists(FINAL_DATA_DIR):
+    raise ValueError(f'FINAL_DATA_DIR already exists: {FINAL_DATA_DIR}')
+os.mkdir(FINAL_DATA_DIR)
+
+
 def get_cid2summary():
     masked_summary_fp = SHIFTSUM_ROOT / 'masked_mn_summary' / f'{DATASET_VAR}-sample-max_reveal_1.0.json'
     cid = 0
@@ -60,7 +67,7 @@ def build():
                 json_obj = json.loads(line)
                 _cid =  _get_cid(json_obj)
                 if _cid != cid:
-                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=SELECTION_METRIC)
+                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC)
 
                     if cid % 500 == 0:
                         logger.info(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
