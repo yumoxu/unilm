@@ -23,10 +23,8 @@ DATASET_VAR = 'train'
 
 METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
 
-if exists(FINAL_DATA_DIR):
-    raise ValueError(f'FINAL_DATA_DIR already exists: {FINAL_DATA_DIR}')
-os.mkdir(FINAL_DATA_DIR)
-
+if not exists(FINAL_DATA_DIR):
+    os.mkdir(FINAL_DATA_DIR)
 
 def get_cid2summary():
     masked_summary_fp = SHIFTSUM_ROOT / 'masked_mn_summary' / f'{DATASET_VAR}-sample-max_reveal_1.0.json'
