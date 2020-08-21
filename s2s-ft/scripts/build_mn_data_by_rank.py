@@ -83,12 +83,12 @@ def build():
                     if to_save:
                         sentences = [so['sentence'] for so in ranked_sentence_objs]
                         src = ' '.join(sentences)
-                        json_obj = {
+                        dump_obj = {
                             "sentences": ranked_sentence_objs,
                             "src": src,
                             "tgt": tgt,
                         }
-                        json_str = json.dumps(json_obj, ensure_ascii=False)
+                        json_str = json.dumps(dump_obj, ensure_ascii=False)
                         dump_f.write(f'{json_str}\n')
 
                     sentence_objs = []
