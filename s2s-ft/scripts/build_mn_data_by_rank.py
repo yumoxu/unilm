@@ -20,11 +20,11 @@ FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
 DATASET_VAR = 'train' 
 
-
 METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
 
 if not exists(FINAL_DATA_DIR):
     os.mkdir(FINAL_DATA_DIR)
+
 
 def get_cid2summary():
     masked_summary_fp = SHIFTSUM_ROOT / 'masked_mn_summary' / f'{DATASET_VAR}-sample-max_reveal_1.0.json'
@@ -79,7 +79,8 @@ def build():
                         to_save = False
 
                     if to_save:
-                        sentences = [so['sentence'] for so in ranked_sentence_objs]
+                        sentences = [so['sentence'].replace('NEWLINE_CHAR', '').strip()
+                            for so in ranked_sentence_objs]
                         src = ' '.join(sentences)
                         dump_obj = {
                             "sentences": ranked_sentence_objs,
