@@ -4,7 +4,7 @@ export MODEL_PATH=$PROJ_PATH/model/unilm_5
 export SPLIT=val
 export INPUT_JSON=$PROJ_PATH/data/multinews-250-gold_rank/${SPLIT}.json
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
@@ -22,7 +22,7 @@ $python $python_file \
   --model_ckpt ${CKPT} \
   --max_seq_length 768 \
   --max_tgt_length 400 \
-  --batch_size 128 \
+  --batch_size 256 \
   --beam_size 5 \
   --length_penalty 0 \
   --forbid_duplicate_ngrams \
