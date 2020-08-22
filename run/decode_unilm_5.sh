@@ -8,7 +8,7 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
-export CKPT=22500,24000
+export CKPT=25000
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
