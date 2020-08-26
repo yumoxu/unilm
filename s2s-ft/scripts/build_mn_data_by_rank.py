@@ -18,7 +18,7 @@ RANK_MODE = 'gold'
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank'
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'train' 
+DATASET_VAR = 'val' 
 
 METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
 
@@ -77,7 +77,7 @@ def build():
                 if _cid != cid:
                     ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC)
 
-                    if cid % 500 == 0:
+                    if cid % 1000 == 0:
                         print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
                     
                     tgt = cid2summary[cid]
