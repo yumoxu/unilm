@@ -10,7 +10,7 @@ SHIFTSUM_ROOT = Path('/home/s1617290/shiftsum/data/multinews')
 UNILM_ROOT = Path('/home/s1617290/unilm/data')
 
 FINAL_DATA_DIR_NAME = 'multinews'
-TGT_MIN_WORDS = 250
+TGT_MIN_WORDS = None
 if TGT_MIN_WORDS:
     FINAL_DATA_DIR_NAME += f'-{TGT_MIN_WORDS}'
 
@@ -18,7 +18,7 @@ RANK_MODE = 'gold'
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank'
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 
 METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
 
@@ -50,6 +50,14 @@ def _rank_sentence_objs(sentence_objs, metric):
     return sorted(sentence_objs, key=lambda so: so[metric], reverse=True)
 
 
+def to_save(tgt):
+    to_save = True
+    if TGT_MIN_WORDS and len(nltk.tokenize.word_tokenize(tgt)) < TGT_MIN_WORDS:
+        to_save = False
+    
+    return to_save
+
+
 def build():
     rouge_fp = SHIFTSUM_ROOT / 'rouge' / f'{DATASET_VAR}.json'
     cid2summary = get_cid2summary()
@@ -74,11 +82,7 @@ def build():
                     
                     tgt = cid2summary[cid]
 
-                    to_save = True
-                    if TGT_MIN_WORDS and len(nltk.tokenize.word_tokenize(tgt)) < TGT_MIN_WORDS:
-                        to_save = False
-
-                    if to_save:
+                    if to_save(tgt):
                         sentences = [so['sentence'].replace('NEWLINE_CHAR', '').strip()
                             for so in ranked_sentence_objs]
                         src = ' '.join(sentences)
