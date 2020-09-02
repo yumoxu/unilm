@@ -24,7 +24,7 @@ $python $python_file \
   --model_ckpt ${CKPT} \
   --max_seq_length 1068 \
   --max_tgt_length 300 \
-  --batch_size 200 \
+  --batch_size 196 \
   --beam_size 5 \
   --length_penalty 0.9 \
   --forbid_duplicate_ngrams \
