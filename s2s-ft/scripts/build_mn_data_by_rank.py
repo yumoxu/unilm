@@ -55,7 +55,7 @@ def get_len_token(tgt_len):
     if tgt_len < 100:
         tgt_len = 85
     elif tgt_len >= 400:
-        tgt_len = 415
+        tgt_len = 400
     else:
         for start in range(100, 400, 15):
             if start <= tgt_len < start+15:
@@ -67,7 +67,7 @@ def get_len_token(tgt_len):
 
 
 def unit_test_get_len_token():
-    tgt_lens = [99, 101, 201, 250, 399, 400, 401]
+    tgt_lens = [99, 100, 101, 201, 250, 399, 400, 401]
     for tl in tgt_lens:
         token = get_len_token(tl)
         print(f'{tl}\t{token}')
