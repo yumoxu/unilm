@@ -62,7 +62,7 @@ def get_len_token(tgt_len):
                 tgt_len = start
                 break
     
-    assert tgt_len%15==0
+    assert tgt_len%15==0 or tgt_len==100, f'{tgt_len} is not right'
     return f'[unused{tgt_len}]'
 
 
