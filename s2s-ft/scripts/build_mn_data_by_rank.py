@@ -118,7 +118,7 @@ def build():
                         src = ' '.join(sentences)
 
                         if PREPEND_LEN:
-                            tgt = get_len_token(tgt) + ' ' + tgt
+                            tgt = get_len_token(tgt_len) + ' ' + tgt
                         
                         dump_obji = {
                             "sentences": ranked_sentence_objs,
