@@ -67,9 +67,9 @@ def _draw(n_token, range, n_bins, xlabel, title, color='darkblue'):
     counts, bin_edges = np.histogram(n_token, bins=n_bins, range=range, density=False)
     dist = [c/float(sum(counts)) for c in counts]
 
-    logger.info(f'total counts: {sum(counts)}')
-    logger.info(f'distribution: {dist}')
-    logger.info(f'bin_edges: {bin_edges}')
+    print(f'total counts: {sum(counts)}')
+    print(f'distribution: {dist}')
+    print(f'bin_edges: {bin_edges}')
 
     fig = plt.figure(figsize=(5, 4))
     sns.distplot(n_token, hist=True, kde=True, 
@@ -94,7 +94,7 @@ def summary_stats():
     stat_fp = STATS_DIR / f'stats_{DATASET_VAR}_{FINAL_DATA_DIR_NAME}.txt'
 
     if not exists(stat_fp):
-        logger.info('Build stat file')
+        print('Build stat file')
         with io.open(stat_fp, mode='a') as stat_f:
             stat_f.write('n_token\tn_words\n')
 
@@ -103,7 +103,7 @@ def summary_stats():
                 n_word =len(word_tokenize(summary))
                 stat_f.write(f'{n_token}\t{n_word}\n')
 
-    logger.info(f'Read from stat fille: {stat_fp}')
+    print(f'Read from stat fille: {stat_fp}')
     with io.open(stat_fp) as stat_f:
         lines = stat_f.readlines()[1:]
         items = [line.strip('\n').split('\t') for line in lines]
