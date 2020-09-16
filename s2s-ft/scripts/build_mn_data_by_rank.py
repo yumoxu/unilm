@@ -53,9 +53,9 @@ def _rank_sentence_objs(sentence_objs, metric):
 
 def get_len_token(tgt_len):
     if tgt_len < 100:
-        tgt_len = 85
+        tgt_len = 90
     elif tgt_len >= 400:
-        tgt_len = 400
+        tgt_len = 405
     else:
         for start in range(100, 400, 15):
             if start <= tgt_len < start+15:
