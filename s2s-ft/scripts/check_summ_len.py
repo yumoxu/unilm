@@ -99,7 +99,7 @@ def summary_stats():
         with io.open(stat_fp, mode='a') as stat_f:
             stat_f.write('n_token\tn_words\n')
 
-            for cid, summary in cid2summary.items():
+            for cid, summary in tqdm(cid2summary.items()):
                 n_token = len(tokenizer.tokenize(summary))
                 n_word =len(word_tokenize(summary))
                 stat_f.write(f'{n_token}\t{n_word}\n')
@@ -109,7 +109,7 @@ def summary_stats():
         lines = stat_f.readlines()[1:]
         items = [line.strip('\n').split('\t') for line in lines]
         n_token, n_word = zip(*items)
-        _draw(n_token=n_token, range=[100, 500], n_bins=400, coor='darkblue',
+        _draw(n_token=n_token, range=[100, 500], n_bins=400, color='darkblue',
             xlabel='Number of tokens', title=f'token_dist_{DATASET_VAR}_{FINAL_DATA_DIR_NAME}.pdf')
 
 
