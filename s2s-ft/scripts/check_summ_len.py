@@ -63,6 +63,7 @@ def get_tokenizer():
 def _draw(n_token, range, n_bins, xlabel, title, color='darkblue'):
     import matplotlib.pyplot as plt
     import seaborn as sns
+    import numpy as np
 
     n_token = [int(nt) for nt in n_token]
     counts, bin_edges = np.histogram(n_token, bins=n_bins, range=range, density=False)
