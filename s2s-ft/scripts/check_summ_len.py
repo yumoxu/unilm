@@ -1,6 +1,11 @@
 import io
 import os
 from os.path import dirname, abspath, join, exists
+
+import sys
+sys.path.insert(0, dirname(dirname(abspath(__file__))))
+sys.path.insert(0, dirname(dirname(dirname(abspath(__file__)))))
+
 from pathlib import Path
 from tqdm import tqdm
 import json
