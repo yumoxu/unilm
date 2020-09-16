@@ -84,7 +84,7 @@ def _draw(n_token, range, n_bins, xlabel, title, color='darkblue'):
     plt.ylabel('Density')
     plt.tight_layout()
     
-    fig.savefig(DP_PROJ/'stats'/ title, bbox_inches='tight')
+    fig.savefig(STATS_DIR / title, bbox_inches='tight')
     plt.show()
 
 
