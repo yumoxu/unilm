@@ -269,6 +269,8 @@ def get_args():
                         help="Cached training features file")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
+    parser.add_argument("--prepend_len", action='store_true',
+                        help="Set this flag if you are using dataset with prepended length tokens in target sequences.")
 
     parser.add_argument("--per_gpu_train_batch_size", default=8, type=int,
                         help="Batch size per GPU/CPU for training.")
@@ -380,9 +382,17 @@ def get_model_and_tokenizer(args):
 
     logger.info("Model config for seq2seq: %s", str(config))
 
+    if arg.prepend_len:
+        tgt_segments = [85] + list(range(100, 400, 15)) + [400]
+        additional_special_tokens = [f'[unused{seg}]' for seg in tgt_segments]
+        logger.info('additional_special_tokens: {additional_special_tokens}')
+    else:
+        additional_special_tokens = None
+
     tokenizer = tokenizer_class.from_pretrained(
         args.tokenizer_name if args.tokenizer_name else args.model_name_or_path,
-        do_lower_case=args.do_lower_case, cache_dir=args.cache_dir if args.cache_dir else None)
+        do_lower_case=args.do_lower_case, cache_dir=args.cache_dir if args.cache_dir else None,
+        additional_special_tokens=additional_special_tokens)
 
     model = BertForSequenceToSequence.from_pretrained(
         args.model_name_or_path, config=config, model_type=args.model_type,
