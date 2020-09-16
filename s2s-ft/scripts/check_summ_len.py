@@ -20,7 +20,7 @@ if TGT_MIN_WORDS:
     FINAL_DATA_DIR_NAME += f'-{TGT_MIN_WORDS}'
 
 RANK_MODE = 'gold'
-METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2f1
+METRIC = 'rouge_2_f1'  # rouge_2_recall, rouge_2_f1
 
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{METRIC}'
 FINAL_DATA_DIR = UNILM_ROOT / 'data' / FINAL_DATA_DIR_NAME
