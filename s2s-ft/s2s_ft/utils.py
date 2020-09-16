@@ -134,16 +134,25 @@ def load_and_cache_examples(
                 examples.append(json.loads(line))
         features = []
 
-        for example in tqdm.tqdm(examples):
+        for idx, example in tqdm.tqdm(enumerate(examples)):
             if isinstance(example["src"], list):
                 source_tokens = example["src"]
                 target_tokens = example["tgt"]
             else:
                 source_tokens = tokenizer.tokenize(example["src"])
                 target_tokens = tokenizer.tokenize(example["tgt"])
+
+            source_ids = tokenizer.convert_tokens_to_ids(source_tokens)
+            target_ids = tokenizer.convert_tokens_to_ids(target_tokens)
+
+            if idx < 5:
+                logger.info(f'example idx: {idx}')
+                logger.info(f'source_tokens: {source_tokens[:10]}')
+                logger.info(f'source_ids: {source_ids[:10]}')
+                
             features.append({
-                    "source_ids": tokenizer.convert_tokens_to_ids(source_tokens),
-                    "target_ids": tokenizer.convert_tokens_to_ids(target_tokens),
+                    "source_ids": source_ids,
+                    "target_ids": target_ids,
                 })
 
         if shuffle:
