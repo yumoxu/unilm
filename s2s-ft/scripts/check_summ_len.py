@@ -24,7 +24,7 @@ DATASET_VAR = 'val'
 # PROJ_ROOT = Path('/disk/nfs/ostrom/s1617290/unilm')
 MODEL_DIR = UNILM_ROOT / 'model' / 'unilm1.2-base-uncased'
 CACHE_DIR = UNILM_ROOT / 'model' / 'cache_unilm'
-STATS_DIR - UNILM_ROOT / 'stats'
+STATS_DIR = UNILM_ROOT / 'stats'
 
 
 if not exists(FINAL_DATA_DIR):
