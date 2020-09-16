@@ -21,7 +21,7 @@ FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{METRIC}'
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
 DATASET_VAR = 'val' 
-
+PREPEND_LEN = True
 
 if not exists(FINAL_DATA_DIR):
     os.mkdir(FINAL_DATA_DIR)
@@ -51,9 +51,31 @@ def _rank_sentence_objs(sentence_objs, metric):
     return sorted(sentence_objs, key=lambda so: so[metric], reverse=True)
 
 
-def to_save(tgt):
+def get_len_token(tgt_len):
+    if tgt_len < 100:
+        tgt_len = 85
+    elif tgt_len >= 400:
+        tgt_len = 400
+    else:
+        for start in range(100, 400, 15):
+            if start <= tgt_len < start+15:
+                tgt_len = start
+                break
+    
+    assert tgt_len%15==0
+    return f'[unused{tgt_len}]'
+
+
+def unit_test_get_len_token():
+    tgt_lens = [99, 101, 201, 250, 399, 400, 401]
+    for tl in tgt_lens:
+        token = get_len_token(tl)
+        print(f'{tl}\t{token}')
+
+
+def to_save(tgt_len):
     to_save = True
-    if TGT_MIN_WORDS and len(nltk.tokenize.word_tokenize(tgt)) < TGT_MIN_WORDS:
+    if TGT_MIN_WORDS and tgt_len < TGT_MIN_WORDS:
         to_save = False
     
     return to_save
@@ -82,17 +104,23 @@ def build():
                         print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
                     
                     tgt = cid2summary[cid]
+                    tgt_words = nltk.tokenize.word_tokenize(tgt)
+                    tgt_len = len(tgt_words)
 
-                    if to_save(tgt):
+                    if to_save(tgt_len):
                         sentences = [so['sentence'].replace('NEWLINE_CHAR', '').strip()
                             for so in ranked_sentence_objs]
                         src = ' '.join(sentences)
-                        dump_obj = {
+
+                        if PREPEND_LEN:
+                            tgt = get_len_token(tgt) + ' ' + tgt
+                        
+                        dump_obji = {
                             "sentences": ranked_sentence_objs,
                             "src": src,
                             "tgt": tgt,
                         }
-                        json_str = json.dumps(dump_obj, ensure_ascii=False)
+                        json_str = json.dumps(dump_obj, ensure_asci=False)
                         dump_f.write(f'{json_str}\n')
 
                     sentence_objs = []
@@ -110,4 +138,5 @@ def build():
 
 
 if __name__ == "__main__":
-    build()
+    # build()
+    unit_test_get_len_token()
