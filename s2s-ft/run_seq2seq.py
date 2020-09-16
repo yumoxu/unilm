@@ -385,7 +385,7 @@ def get_model_and_tokenizer(args):
     if args.prepend_len:
         tgt_segments = [85] + list(range(100, 400, 15)) + [400]
         additional_special_tokens = [f'[unused{seg}]' for seg in tgt_segments]
-        logger.info('additional_special_tokens: {additional_special_tokens}')
+        logger.info(r'additional_special_tokens: {additional_special_tokens}')
     else:
         additional_special_tokens = None
 
