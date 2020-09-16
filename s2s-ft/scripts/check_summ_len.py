@@ -57,6 +57,7 @@ def get_tokenizer():
     tokenizer = UnilmTokenizer.from_pretrained(
         tokenizer_name if tokenizer_name else model_name_or_path,
         do_lower_case=do_lower_case, cache_dir=cache_dir)
+    return tokenizer
 
     
 def _draw(n_token, range, n_bins, xlabel, title, color='darkblue'):
@@ -99,7 +100,7 @@ def summary_stats():
             stat_f.write('n_token\tn_words\n')
 
             for cid, summary in cid2summary.items():
-                n_token = len(tokenizer(summary))
+                n_token = len(tokenizer.tokenize(summary))
                 n_word =len(word_tokenize(summary))
                 stat_f.write(f'{n_token}\t{n_word}\n')
 
