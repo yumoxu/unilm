@@ -53,16 +53,16 @@ def _rank_sentence_objs(sentence_objs, metric):
 
 def get_len_token(tgt_len):
     if tgt_len < 100:
-        tgt_len = 90
+        tgt_len = 85
     elif tgt_len >= 400:
-        tgt_len = 405
+        tgt_len = 415
     else:
         for start in range(100, 400, 15):
             if start <= tgt_len < start+15:
                 tgt_len = start
                 break
     
-    assert tgt_len%15==0 or tgt_len==100, f'{tgt_len} is not right'
+    assert (tgt_len-100)%15==0 or tgt_len==85, f'{tgt_len} is not right'
     return f'[unused{tgt_len}]'
 
 
