@@ -110,8 +110,10 @@ def summary_stats():
         lines = stat_f.readlines()[1:]
         items = [line.strip('\n').split('\t') for line in lines]
         n_token, n_word = zip(*items)
-        _draw(n_token=n_token, range=[100, 500], n_bins=400, color='darkblue',
-            xlabel='Number of tokens', title=f'token_dist_{DATASET_VAR}_{FINAL_DATA_DIR_NAME}.pdf')
+        _draw(n_token=n_token, range=[100, 500], n_bins=80, color='darkblue',
+            xlabel='Number of tokens', title=f'bpe_dist_{DATASET_VAR}_{FINAL_DATA_DIR_NAME}.pdf')
+        _draw(n_token=n_token, range=[100, 500], n_bins=80, color='darkblue',
+            xlabel='Number of words', title=f'word_dist_{DATASET_VAR}_{FINAL_DATA_DIR_NAME}.pdf')
 
 
 if __name__ == "__main__":
