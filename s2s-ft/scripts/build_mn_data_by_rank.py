@@ -15,13 +15,18 @@ if TGT_MIN_WORDS:
     FINAL_DATA_DIR_NAME += f'-{TGT_MIN_WORDS}'
 
 RANK_MODE = 'gold'
-METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
+METRIC = 'rouge_2_f1'  # rouge_2_recall, rouge_2_f1
 
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{METRIC}'
+
+PREPEND_LEN = True
+if PREPEND_LEN:
+    FINAL_DATA_DIR_NAME += '_prepend_len'
+
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
 DATASET_VAR = 'val' 
-PREPEND_LEN = True
+
 
 if not exists(FINAL_DATA_DIR):
     os.mkdir(FINAL_DATA_DIR)
@@ -138,5 +143,5 @@ def build():
 
 
 if __name__ == "__main__":
-    # build()
-    unit_test_get_len_token()
+    build()
+    # unit_test_get_len_token()
