@@ -6,7 +6,7 @@ from tqdm import tqdm
 import json
 from nltk.tokenize import word_tokenize
 
-SHIFTSUM_ROOT = P_ath('/home/s1617290/shiftsum/data/multinews')
+SHIFTSUM_ROOT = Path('/home/s1617290/shiftsum/data/multinews')
 UNILM_ROOT = Path('/home/s1617290/unilm')
 
 FINAL_DATA_DIR_NAME = 'multinews'
