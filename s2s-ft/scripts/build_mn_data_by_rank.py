@@ -126,7 +126,7 @@ def build():
                             "tgt": tgt,
                         }
                         # json_str = json.dumps(dump_obj, ensure_asci=False)
-                         json_str = json.dumps(dump_obj)
+                        json_str = json.dumps(dump_obj)
                         dump_f.write(f'{json_str}\n')
 
                     sentence_objs = []
