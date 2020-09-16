@@ -120,7 +120,7 @@ def build():
                         if PREPEND_LEN:
                             tgt = get_len_token(tgt_len) + ' ' + tgt
                         
-                        dump_obji = {
+                        dump_obj = {
                             "sentences": ranked_sentence_objs,
                             "src": src,
                             "tgt": tgt,
