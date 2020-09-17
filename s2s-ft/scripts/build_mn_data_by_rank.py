@@ -25,7 +25,7 @@ if PREPEND_LEN:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'train' 
+DATASET_VAR = 'val' 
 
 
 if not exists(FINAL_DATA_DIR):
