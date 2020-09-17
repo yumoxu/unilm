@@ -28,6 +28,6 @@ $python -m torch.distributed.launch --nproc_per_node=8 ${python_file} \
   --gradient_accumulation_steps 4 \
   --learning_rate 7e-5 \
   --num_warmup_steps 1000 \
-  --num_training_steps 40000 \
+  --num_training_steps 20000 \
   --cache_dir $CACHE_DIR \
   --save_steps 1500

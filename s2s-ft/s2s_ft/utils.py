@@ -134,7 +134,7 @@ def load_and_cache_examples(
                 examples.append(json.loads(line))
         features = []
 
-        for idx, example in tqdm.tqdm(enumerate(examples)):
+        for idx, example in enumerate(tqdm.tqdm(examples):
             if isinstance(example["src"], list):
                 source_tokens = example["src"]
                 target_tokens = example["tgt"]
