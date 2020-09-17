@@ -10,7 +10,8 @@ export MKL_NUM_THREADS=4
 
 # 1500,3000,4500,6000,7500,9000,10500,12000,13500,15000,16500,18000,19500
 # 1500,4500,7500,10500,13500,16500,19500
-export CKPT=3000,6000,9000,12000,15000,18000
+# 3000,6000,9000,12000,15000,18000
+export CKPT=1500,4500,7500,10500,13500,16500,19500
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
@@ -25,7 +26,7 @@ $python $python_file \
   --model_ckpt ${CKPT} \
   --max_seq_length 1068 \
   --max_tgt_length 300 \
-  --batch_size 196 \
+  --batch_size 98 \
   --beam_size 5 \
   --length_penalty 0 \
   --forbid_duplicate_ngrams \
