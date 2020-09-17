@@ -4,7 +4,7 @@ export MODEL_PATH=$PROJ_PATH/model/unilm_7
 export SPLIT=val
 export INPUT_JSON=$PROJ_PATH/data/multinews-gold_rank_rouge_2_f1_prepend_len/${SPLIT}.json
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=4,5,6,7
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
