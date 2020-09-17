@@ -23,6 +23,10 @@ PREPEND_LEN = True
 if PREPEND_LEN:
     FINAL_DATA_DIR_NAME += '_prepend_len'
 
+SWAP_PROB = 0.0
+if SWAP_PROB > 0.0:
+    FINAL_DATA_DIR_NAME += '_{SWAP_PROB}_swap'
+
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
 DATASET_VAR = 'val' 
@@ -54,6 +58,93 @@ def _get_cid(json_obj):
 
 def _rank_sentence_objs(sentence_objs, metric):
     return sorted(sentence_objs, key=lambda so: so[metric], reverse=True)
+
+
+def _swap_sentence_objs(sentence_objs, metric, swap_prob):
+    def _swap(i, j):
+        temp = sentence_objs[j]
+        sentence_objs[j] = sentence_objs[i]
+        sentence_objs[i] = temp
+        
+    status = [0] * len(sentence_objs)
+
+    for ii, so in enumerate(sentence_objs[:-1]):
+        if status[ii] == 1:  # has bee swapped
+            continue
+            
+        do_swap = np.random.choice([0, 1], p=np.array([1.0-swap_prob, swap_prob]))
+        if not do_swap:
+            continue
+        
+        candidates = sentence_objs[ii+1:]
+        for relative_pos, _so in enumerate(candidates):
+            score = 1.0 / (math.abs(so[metric]-_so[metric]) + 1e-7)
+            if status[jj] == 1:
+                score = 0.0
+            scores.append(score)
+        nom = sum(scores)
+
+        prob_dist = np.array([sc/nom for sc in scores])
+        indices = ii + 1 + np.arange(len(prob_dist))
+        jj = np.random.choice(indices, p=prob_dist)  # abs_pos
+        _swap(ii, jj)
+
+
+def unit_test_swap_sentence_objs():
+    rouge_fp = SHIFTSUM_ROOT / 'rouge' / f'{DATASET_VAR}.json'
+    cid2summary = get_cid2summary()
+
+    dump_fp = FINAL_DATA_DIR / f'{DATASET_VAR}.json'
+
+    cid = 0
+    sentence_objs = []
+    with open(dump_fp, 'a') as dump_f:
+        with open(rouge_fp) as rouge_f:
+            for line in rouge_f:
+                line = line.strip('\n')
+                if not line:
+                    continue
+                json_obj = json.loads(line)
+                _cid =  _get_cid(json_obj)
+                if _cid != cid:
+                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC)
+                    if SWAP_PROB > 0.0:
+                        _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
+
+                    if cid % 1000 == 0:
+                        print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
+                    
+                    tgt = cid2summary[cid]
+                    tgt_words = nltk.tokenize.word_tokenize(tgt)
+                    tgt_len = len(tgt_words)
+
+                    if to_save(tgt_len):
+                        sentences = [so['sentence'].replace('NEWLINE_CHAR', '').strip()
+                            for so in ranked_sentence_objs]
+                        src = ' '.join(sentences)
+
+                        if PREPEND_LEN:
+                            src = get_len_token(tgt_len) + ' ' + src
+                        
+                        dump_obj = {
+                            "sentences": ranked_sentence_objs,
+                            "src": src,
+                            "tgt": tgt,
+                        }
+                        # json_str = json.dumps(dump_obj, ensure_asci=False)
+                        json_str = json.dumps(dump_obj)
+                        dump_f.write(f'{json_str}\n')
+
+                    sentence_objs = []
+
+                so = {
+                    'id': json_obj['sid'],
+                    'sentence': json_obj['sentence'],
+                    'rouge_2_recall': json_obj['rouge_2_recall'],
+                    'rouge_2_f1': json_obj['rouge_2_f1'],
+                }
+                sentence_objs.append(so)
+                cid = _cid
 
 
 def get_len_token(tgt_len):
@@ -104,6 +195,8 @@ def build():
                 _cid =  _get_cid(json_obj)
                 if _cid != cid:
                     ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC)
+                    if SWAP_PROB > 0.0:
+                        _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
 
                     if cid % 1000 == 0:
                         print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
@@ -144,5 +237,6 @@ def build():
 
 
 if __name__ == "__main__":
-    build()
     # unit_test_get_len_token()
+    unit_test_swap_sentence_objs()
+    # build()

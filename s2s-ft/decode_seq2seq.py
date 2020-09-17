@@ -335,6 +335,8 @@ def decode_all():
                         help="random seed for initialization")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
+    parser.add_argument("--prepend_len", action='store_true',
+                        help="Set this flag if you are using dataset with prepended length tokens in target sequences.")
     parser.add_argument('--batch_size', type=int, default=4,
                         help="Batch size for decoding.")
     parser.add_argument('--beam_size', type=int, default=1,
@@ -390,9 +392,17 @@ def decode_all():
         if n_gpu > 0:
             torch.cuda.manual_seed_all(args.seed)
     
+    if args.prepend_len:
+        tgt_segments = [85] + list(range(100, 400, 15)) + [400]
+        additional_special_tokens = [f'[unused{seg}]' for seg in tgt_segments]
+        logger.info(f'additional_special_tokens: {additional_special_tokens}')
+    else:
+        additional_special_tokens = None
+    
     tokenizer = TOKENIZER_CLASSES[args.model_type].from_pretrained(
         args.tokenizer_name, do_lower_case=args.do_lower_case, 
-        cache_dir=args.cache_dir if args.cache_dir else None)
+        cache_dir=args.cache_dir if args.cache_dir else None,
+        additional_special_tokens=additional_special_tokens)
 
     if args.model_type == "roberta":
         vocab = tokenizer.encoder
