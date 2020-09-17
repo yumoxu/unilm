@@ -12,7 +12,7 @@ export MKL_NUM_THREADS=4
 # 1500,3000,4500,12000,13500
 # 6000,7500,15000,16500
 # 9000,10500,18000,19500
-export CKPT=1500,3000,4500,12000,13500
+export CKPT=6000,7500,15000,16500
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
