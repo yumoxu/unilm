@@ -204,7 +204,7 @@ def build():
                 json_obj = json.loads(line)
                 _cid =  _get_cid(json_obj)
                 if _cid != cid:
-                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC)
+                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
                     if SWAP_PROB > 0.0:
                         _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
 
