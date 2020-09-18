@@ -31,7 +31,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'dev' 
+DATASET_VAR = 'val' 
 
 
 if not exists(FINAL_DATA_DIR):
