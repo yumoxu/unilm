@@ -16,8 +16,8 @@ if TGT_MIN_WORDS:
 
 RANK_MODE = 'gold'
 METRIC = 'rouge_2_f1'  # rouge_2_recall, rouge_2_f1
-
-FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{METRIC}'
+ROUGE_C = 0.15
+FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{METRIC.split('_')[-1]}_{ROUGE_C}'
 
 PREPEND_LEN = True
 if PREPEND_LEN:
@@ -56,8 +56,23 @@ def _get_cid(json_obj):
     return int(json_obj['sid'].split('_')[0])
 
 
-def _rank_sentence_objs(sentence_objs, metric):
-    return sorted(sentence_objs, key=lambda so: so[metric], reverse=True)
+def _rank_sentence_objs(sentence_objs, metric, rouge_c):
+     if metric == 'rouge_2_recall':
+            smooth_metric = 'rouge_1_recall'
+    elif metric == 'rouge_2_f1':
+        smooth_metric = 'rouge_1_f1'
+    else:
+        raise ValueError(f'Invalid smooth_metric: {smooth_metric}')
+
+    if rouge_c > 0.0:
+        for so in sentence_objs:
+            smoothed_score = (1 - rouge_c) * float(so[metric]) + rouge_c * float(so[smooth_metric])
+            so['smoothed_score'] = smoothed_score
+        ranked_objs = sorted(sentence_objs, key=lambda so: so['smoothed_score'], reverse=True)
+    else:
+        ranked_objs = sorted(sentence_objs, key=lambda so: so[metric], reverse=True)
+
+    return ranked_objs
 
 
 def _swap_sentence_objs(sentence_objs, metric, swap_prob):
@@ -107,7 +122,7 @@ def unit_test_swap_sentence_objs():
                 json_obj = json.loads(line)
                 _cid =  _get_cid(json_obj)
                 if _cid != cid:
-                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC)
+                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC, rouge_c=ROUGE_C)
                     if SWAP_PROB > 0.0:
                         _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
 
@@ -238,5 +253,5 @@ def build():
 
 if __name__ == "__main__":
     # unit_test_get_len_token()
-    unit_test_swap_sentence_objs()
-    # build()
+    # unit_test_swap_sentence_objs()
+    build()
