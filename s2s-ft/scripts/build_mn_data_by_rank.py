@@ -17,8 +17,9 @@ if TGT_MIN_WORDS:
 RANK_MODE = 'gold'
 METRIC = 'rouge_2_f1'  # rouge_2_recall, rouge_2_f1
 ROUGE_C = 0.15
-F1_OR_RECALL = METRIC.split('_')[-1]
-FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{F1_OR_RECALL}_{ROUGE_C}'
+SHORT_METRIC = METRIC.split('_')[-1]
+SMOOTH_METRIC = f'rouge_1_{SHORT_METRIC}'
+FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{SHORT_METRIC}_{ROUGE_C}'
 
 PREPEND_LEN = True
 if PREPEND_LEN:
@@ -57,14 +58,7 @@ def _get_cid(json_obj):
     return int(json_obj['sid'].split('_')[0])
 
 
-def _rank_sentence_objs(sentence_objs, metric, rouge_c):
-    if metric == 'rouge_2_recall':
-        smooth_metric = 'rouge_1_recall'
-    elif metric == 'rouge_2_f1':
-        smooth_metric = 'rouge_1_f1'
-    else:
-        raise ValueError(f'Invalid smooth_metric: {smooth_metric}')
-
+def _rank_sentence_objs(sentence_objs, metric, rouge_c, smooth_metric):
     if rouge_c > 0.0:
         for so in sentence_objs:
             smoothed_score = (1 - rouge_c) * float(so[metric]) + rouge_c * float(so[smooth_metric])
@@ -123,7 +117,7 @@ def unit_test_swap_sentence_objs():
                 json_obj = json.loads(line)
                 _cid =  _get_cid(json_obj)
                 if _cid != cid:
-                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC, rouge_c=ROUGE_C)
+                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
                     if SWAP_PROB > 0.0:
                         _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
 
