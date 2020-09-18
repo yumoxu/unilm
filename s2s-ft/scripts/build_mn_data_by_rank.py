@@ -17,7 +17,8 @@ if TGT_MIN_WORDS:
 RANK_MODE = 'gold'
 METRIC = 'rouge_2_f1'  # rouge_2_recall, rouge_2_f1
 ROUGE_C = 0.15
-FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{METRIC.split('_')[-1]}_{ROUGE_C}'
+F1_OR_RECALL = METRIC.split('_')[-1]
+FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{F1_OR_RECALL}_{ROUGE_C}'
 
 PREPEND_LEN = True
 if PREPEND_LEN:
