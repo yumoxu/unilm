@@ -61,6 +61,7 @@ def _get_cid(json_obj):
 def _rank_sentence_objs(sentence_objs, metric, rouge_c, smooth_metric):
     if rouge_c > 0.0:
         for so in sentence_objs:
+            print(so)
             smoothed_score = (1 - rouge_c) * float(so[metric]) + rouge_c * float(so[smooth_metric])
             so['smoothed_score'] = smoothed_score
         ranked_objs = sorted(sentence_objs, key=lambda so: so['smoothed_score'], reverse=True)
