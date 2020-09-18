@@ -61,7 +61,6 @@ def _get_cid(json_obj):
 def _rank_sentence_objs(sentence_objs, metric, rouge_c, smooth_metric):
     if rouge_c > 0.0:
         for so in sentence_objs:
-            print(so)
             smoothed_score = (1 - rouge_c) * float(so[metric]) + rouge_c * float(so[smooth_metric])
             so['smoothed_score'] = smoothed_score
         ranked_objs = sorted(sentence_objs, key=lambda so: so['smoothed_score'], reverse=True)
@@ -151,6 +150,8 @@ def unit_test_swap_sentence_objs():
                 so = {
                     'id': json_obj['sid'],
                     'sentence': json_obj['sentence'],
+                    'rouge_1_recall': json_obj['rouge_1_recall'],
+                    'rouge_1_f1': json_obj['rouge_1_f1'],
                     'rouge_2_recall': json_obj['rouge_2_recall'],
                     'rouge_2_f1': json_obj['rouge_2_f1'],
                 }
