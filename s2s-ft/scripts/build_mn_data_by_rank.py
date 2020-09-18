@@ -239,6 +239,8 @@ def build():
                 so = {
                     'id': json_obj['sid'],
                     'sentence': json_obj['sentence'],
+                    'rouge_1_recall': json_obj['rouge_1_recall'],
+                    'rouge_1_f1': json_obj['rouge_1_f1'],
                     'rouge_2_recall': json_obj['rouge_2_recall'],
                     'rouge_2_f1': json_obj['rouge_2_f1'],
                 }
