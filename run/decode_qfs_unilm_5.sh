@@ -1,6 +1,7 @@
 export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 
-export INPUT_FILE_NAME=marge-13_config-37500_iter-narr-ir-dial-tf-2005-top50
+# marge-13_config-37500_iter-narr-ir-dial-tf-2005-top50
+export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2007-top150
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_5
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
