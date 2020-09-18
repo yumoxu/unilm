@@ -1,6 +1,6 @@
 export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 
-export INPUT_FILE_NAME=centrality-hard_bias-0.85_damp-rr_records-rr-34_config-25000_iter-query-ir-dial-tf-2006-150_qa_topK-0.6_cos-10_wan-prepend_len
+export INPUT_FILE_NAME=centrality-hard_bias-0.85_damp-rr_records-rr-34_config-25000_iter-query-ir-dial-tf-2007-150_qa_topK-0.6_cos-10_wan-prepend_len
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_7
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
