@@ -57,8 +57,8 @@ def _get_cid(json_obj):
 
 
 def _rank_sentence_objs(sentence_objs, metric, rouge_c):
-     if metric == 'rouge_2_recall':
-            smooth_metric = 'rouge_1_recall'
+    if metric == 'rouge_2_recall':
+        smooth_metric = 'rouge_1_recall'
     elif metric == 'rouge_2_f1':
         smooth_metric = 'rouge_1_f1'
     else:
