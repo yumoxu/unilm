@@ -15,13 +15,13 @@ if TGT_MIN_WORDS:
     FINAL_DATA_DIR_NAME += f'-{TGT_MIN_WORDS}'
 
 RANK_MODE = 'gold'
-METRIC = 'rouge_2_f1'  # rouge_2_recall, rouge_2_f1
-ROUGE_C = 0.15
+METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
+ROUGE_C = 0.0
 SHORT_METRIC = METRIC.split('_')[-1]
 SMOOTH_METRIC = f'rouge_1_{SHORT_METRIC}'
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{SHORT_METRIC}_{ROUGE_C}'
 
-PREPEND_LEN = False
+PREPEND_LEN = True
 if PREPEND_LEN:
     FINAL_DATA_DIR_NAME += '_prepend_len'
 
@@ -31,7 +31,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 
 
 if not exists(FINAL_DATA_DIR):
