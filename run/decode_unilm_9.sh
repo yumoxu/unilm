@@ -20,7 +20,6 @@ $python $python_file \
   --fp16 --model_type unilm \
   --tokenizer_name unilm1.2-base-uncased \
   --do_lower_case \
-  --prepend_len \
   --input_file ${INPUT_JSON} \
   --split $SPLIT \
   --model_path ${MODEL_PATH} \
