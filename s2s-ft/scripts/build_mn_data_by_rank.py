@@ -26,7 +26,7 @@ SMOOTH_METRIC = f'rouge_1_{SHORT_METRIC}'
 if ROUGE_C > 0:
     FINAL_DATA_DIR_NAME += f'_{ROUGE_C}'
 
-PREPEND_LEN = True
+PREPEND_LEN = False
 if PREPEND_LEN:
     FINAL_DATA_DIR_NAME += '_prepend_len'
 
@@ -36,7 +36,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 
 
 if not exists(FINAL_DATA_DIR):
