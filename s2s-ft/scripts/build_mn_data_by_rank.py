@@ -16,6 +16,7 @@ if TGT_MIN_WORDS:
 
 RANK_MODE = 'gold'
 METRIC = 'rouge_2_recall'  # rouge_2_recall, rouge_2_f1
+
 ROUGE_C = 0.0
 SHORT_METRIC = METRIC.split('_')[-1]
 SMOOTH_METRIC = f'rouge_1_{SHORT_METRIC}'
