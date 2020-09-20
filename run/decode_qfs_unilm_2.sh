@@ -1,6 +1,8 @@
 export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 
-export INPUT_FILE_NAME=marge-13_config-37500_iter-narr-ir-dial-tf-2005-top90-global_pos
+# marge-13_config-37500_iter-narr-ir-dial-tf-2005-top90-global_pos
+# rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-local_pos
+export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-local_pos
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_2
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
@@ -30,4 +32,4 @@ $python $python_file \
   --forbid_duplicate_ngrams \
   --mode s2s \
   --forbid_ignore_word "." \
-  --min_len 300
+  --min_len 200
