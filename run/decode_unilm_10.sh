@@ -4,12 +4,12 @@ export MODEL_PATH=$PROJ_PATH/model/unilm_10
 export SPLIT=val
 export INPUT_JSON=$PROJ_PATH/data/multinews-gold_rank_recall_prepend_len/${SPLIT}.json
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-export OMP_NUM_THREADS=4
-export MKL_NUM_THREADS=4
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export OMP_NUM_THREADS=8
+export MKL_NUM_THREADS=8
 
 # 1500,3000,4500,6000,7500,9000,10500,12000,13500,15000,16500,18000,19500
-export CKPT=10500
+export CKPT=15000,16500
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
