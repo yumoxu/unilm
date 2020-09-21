@@ -3,7 +3,7 @@ export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 # RR: rr-34_config-25000_iter-query-ir-dial-tf-2006-top150-prepend_len
 # QA: qa-bert-narr-ir-tf-2006-top90-prepend_len
 # IR: ir-tf-2006-conf0.75-prepend_len
-export INPUT_FILE_NAME=ir-tf-2006-conf0.75-prepend_len
+export INPUT_FILE_NAME=ir-tf-2007-conf0.75-prepend_len
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_7
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
