@@ -147,8 +147,8 @@ def load_and_cache_examples(
 
             if idx < 5:
                 logger.info(f'example idx: {idx}')
-                logger.info(f'source_tokens: {source_tokens[:10]}')
-                logger.info(f'source_ids: {source_ids[:10]}')
+                logger.info(f'source_tokens: {source_tokens}')
+                logger.info(f'source_ids: {source_ids}')
                 
             features.append({
                     "source_ids": source_ids,
