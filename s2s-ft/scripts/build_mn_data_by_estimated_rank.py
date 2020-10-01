@@ -6,6 +6,9 @@ from tqdm import tqdm
 import json
 import nltk
 
+
+DATASET_VAR = 'train'  # specify this 
+
 SHIFTSUM_ROOT = Path('/home/s1617290/shiftsum/data/multinews')
 UNILM_ROOT = Path('/home/s1617290/unilm/data')
 
@@ -25,8 +28,6 @@ if SWAP_PROB > 0.0:
     FINAL_DATA_DIR_NAME += f'_{SWAP_PROB}_swap'
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
-
-DATASET_VAR = 'val' 
 
 
 def get_cid2summary():
