@@ -157,7 +157,7 @@ def build():
 
                 so = {
                     'id': json_obj['sid'],
-                    'sentence': json_obj['sentence'],
+                    'sentence': json_obj['sent'],
                     'estimated_rouge': float(json_obj['estimated_rouge']),
                 }
                 sentence_objs.append(so)
