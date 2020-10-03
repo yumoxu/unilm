@@ -4,7 +4,7 @@ export MODEL_PATH=$PROJ_PATH/model/unilm_12
 export SPLIT=val
 export INPUT_JSON=$PROJ_PATH/data/rouge_estimated-rr-34_config-25000_iter-masked_summ-mn-marge_cluster-ratio-reveal_0.0_prepend_len/${SPLIT}.json
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
@@ -28,7 +28,7 @@ $python $python_file \
   --model_ckpt ${CKPT} \
   --max_seq_length 1068 \
   --max_tgt_length 300 \
-  --batch_size 96 \
+  --batch_size 192 \
   --beam_size 5 \
   --length_penalty 0 \
   --forbid_duplicate_ngrams \
