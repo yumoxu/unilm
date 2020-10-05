@@ -8,10 +8,9 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
-# quarry: 1500,3000
-# nuess: 4500,6000
-# nuess: 7500,9000
-# nuess: 10500,12000,13500,15000,16500,18000,19500,21000,22500,24000,25500,27000,28500
+# quarry: 1500,3000,4500,6000,7500
+# nuess: 9000,10500,12000,13500,15000
+# nuess: 15000,16500,18000,19500,21000,22500,24000,25500,27000,28500
 # duflo: 30000,31500,33000,34500,36000,37500,39000
 export CKPT=4500,6000
 export python=$PROJ_PATH/bin/python
@@ -28,7 +27,7 @@ $python $python_file \
   --model_ckpt ${CKPT} \
   --max_seq_length 1068 \
   --max_tgt_length 300 \
-  --batch_size 192 \
+  --batch_size 96 \
   --beam_size 5 \
   --length_penalty 0 \
   --forbid_duplicate_ngrams \
