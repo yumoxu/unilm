@@ -12,5 +12,5 @@ $python ${python_file} \
     --gold ${GOLD_PATH} \
     --split ${SPLIT} \
     --save_best \
-    --processes 1 \
+    --processes 32 \
     --trunc_len 300
