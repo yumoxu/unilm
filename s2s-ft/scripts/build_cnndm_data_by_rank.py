@@ -40,7 +40,7 @@ SMOOTH_METRIC = f'rouge_1_{SHORT_METRIC}'
 if ROUGE_C > 0:
     FINAL_DATA_DIR_NAME += f'_{ROUGE_C}'
 
-PREPEND_LEN = False
+PREPEND_LEN = True
 if PREPEND_LEN:
     FINAL_DATA_DIR_NAME += '_prepend_len'
 
