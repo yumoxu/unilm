@@ -253,7 +253,7 @@ def build_clusters():
 
     with open(CLUSTER_DUMP_FP, 'a') as dump_f:
         for cid in cids:
-            if cid % 1000 == 0:
+            if int(cid) % 1000 == 0:
                 print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
             
             cluster_info = cid2info[cid]  # TODO get sentence_objs from doc_id2rank
