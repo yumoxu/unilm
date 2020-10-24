@@ -50,7 +50,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 
 if not exists(FINAL_DATA_DIR):
