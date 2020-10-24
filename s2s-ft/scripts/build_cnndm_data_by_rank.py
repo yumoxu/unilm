@@ -197,7 +197,6 @@ def build_docs():
 
                     json_str = sentence_objs2records(sentence_objs, doc_id)
                     dump_f.write(f'{json_str}\n')
-
                     sentence_objs = []
 
                 so = {
