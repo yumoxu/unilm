@@ -49,7 +49,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'train' 
+DATASET_VAR = 'val' 
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 
 if not exists(FINAL_DATA_DIR):
@@ -157,6 +157,23 @@ def to_save(tgt_len):
     return to_save
 
 
+def sentence_objs2records(sentence_objs, doc_id):
+    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, 
+        metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
+    if SWAP_PROB > 0.0:
+        _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
+
+    if doc_id % 1000 == 0:
+        print(f'doc id: {doc_id}, #Sentences: {len(sentence_objs)}')
+    
+    dump_obj = {
+        "doc_id": doc_id,
+        "sentences": ranked_sentence_objs,
+    }
+    json_str = json.dumps(dump_obj)
+    return json_str
+
+    
 def build_docs():
     """
         Rank sentences per sample, and dump them.
@@ -175,19 +192,10 @@ def build_docs():
                 json_obj = json.loads(line)
                 _doc_id =  _get_did(json_obj)
                 if _doc_id != doc_id:
-                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, 
-                        metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
-                    if SWAP_PROB > 0.0:
-                        _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
-
                     if doc_id % 1000 == 0:
                         print(f'doc id: {doc_id}, #Sentences: {len(sentence_objs)}')
-                    
-                    dump_obj = {
-                        "doc_id": doc_id,
-                        "sentences": ranked_sentence_objs,
-                    }
-                    json_str = json.dumps(dump_obj)
+
+                    json_str = sentence_objs2records(sentence_objs, doc_id)
                     dump_f.write(f'{json_str}\n')
 
                     sentence_objs = []
@@ -202,14 +210,29 @@ def build_docs():
                 }
                 sentence_objs.append(so)
                 doc_id = _doc_id
+            
+            if sentence_objs:  # finish the last
+                json_str = sentence_objs2records(sentence_objs, doc_id)
+                dump_f.write(f'{json_str}\n')
     
     print(f'Sucessfully dump {DATASET_VAR} set to: {DOC_DUMP_FP}')
 
 
 def load_docs():
-    # TODO
     doc_id2rank = {}
+    with open(DOC_DUMP_FP) as doc_f:
+        for line in tqdm(doc_f):
+            json_obj = json.loads(line)
+            doc_id2rank[json_obj['doc_id']] = json_obj['sentences']
+
     return doc_id2rank
+
+
+def merge(cluster_sentences):
+    """
+        # TODO merge multiple sorted lists
+    """
+    pass
 
 
 def build_clusters():
@@ -227,6 +250,12 @@ def build_clusters():
             
             # TODO get sentence_objs from doc_id2rank
             cluster_info = cid2info[cid]
+            doc_ids = cluster_info['doc_ids']
+            cluster_sentences = [doc_id2rank[doc_id] 
+                for doc_id in doc_ids]
+            
+            ranked_sentence_objs = merge(cluster_sentences)
+
             tgt = cluster_info['summary']
             tgt_words = nltk.tokenize.word_tokenize(tgt)
             tgt_len = len(tgt_words)
@@ -253,5 +282,5 @@ def build_clusters():
 if __name__ == "__main__":
     # unit_test_get_len_token()
     # unit_test_swap_sentence_objs()
-    build_docs()
-    # build_clusters()
+    # build_docs()
+    build_clusters()
