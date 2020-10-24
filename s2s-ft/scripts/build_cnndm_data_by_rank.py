@@ -252,11 +252,8 @@ def build_clusters():
     doc_id2rank = load_docs()
 
     with open(CLUSTER_DUMP_FP, 'a') as dump_f:
-        for cid in cids:
-            if int(cid) % 1000 == 0:
-                print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
-            
-            cluster_info = cid2info[cid]  # TODO get sentence_objs from doc_id2rank
+        for cid in enumerate(cids):
+            cluster_info = cid2info[cid]
             doc_ids = cluster_info['doc_ids']
             
             # not all doc id exists in doc_id2rank
