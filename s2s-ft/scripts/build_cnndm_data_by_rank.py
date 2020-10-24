@@ -83,12 +83,6 @@ def proc_summary(summaries):
     return ' '.join(summaries)
 
 
-class Doc:
-    def __init__(self, sample_id, ranked_sentence_objs):
-        self.sample_id = sample_id
-        self.ranked_sentence_objs = ranked_sentence_objs
-
-
 def _get_did(json_obj):
     return int(json_obj['sid'].split('_')[0])
 
@@ -252,7 +246,7 @@ def build_clusters():
     doc_id2rank = load_docs()
 
     with open(CLUSTER_DUMP_FP, 'a') as dump_f:
-        for cid in enumerate(cids):
+        for cid in tqdm(cids):
             cluster_info = cid2info[cid]
             doc_ids = cluster_info['doc_ids']
             
