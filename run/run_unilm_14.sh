@@ -1,8 +1,8 @@
-export MODEL_NAME=unilm_14
+export MODEL_NAME=unilm_7
 
 export PROJ_ROOT=/disk/nfs/ostrom/s1617290/unilm
 
-export DATA_DIR=${PROJ_ROOT}/data/multinews-gold_rank_f1
+export DATA_DIR=${PROJ_ROOT}/data/multinews-gold_rank_rouge_2_f1_prepend_len
 export TRAIN_FILE=${DATA_DIR}/train.json
 
 export OUTPUT_DIR=${PROJ_ROOT}/model/${MODEL_NAME}
@@ -19,6 +19,7 @@ $python -m torch.distributed.launch --nproc_per_node=8 ${python_file} \
   --model_type unilm \
   --model_name_or_path $MODEL_DIR \
   --do_lower_case \
+  --prepend_len \
   --fp16 \
   --fp16_opt_level O2 \
   --max_source_seq_length 768 \
