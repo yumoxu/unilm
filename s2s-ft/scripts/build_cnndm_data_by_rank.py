@@ -157,6 +157,18 @@ def to_save(tgt_len):
     return to_save
 
 
+def get_sentence_obj(rouge_json_obj):
+    so = {
+        'id': rouge_json_obj['sid'],
+        'sentence': rouge_json_obj['sentence'],
+        'rouge_1_recall': rouge_json_obj['rouge_1_recall'],
+        'rouge_1_f1': rouge_json_obj['rouge_1_f1'],
+        'rouge_2_recall': rouge_json_obj['rouge_2_recall'],
+        'rouge_2_f1': rouge_json_obj['rouge_2_f1'],
+    }
+    return so
+
+
 def sentence_objs2records(sentence_objs, doc_id):
     ranked_sentence_objs = _rank_sentence_objs(sentence_objs, 
         metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
@@ -199,14 +211,7 @@ def build_docs():
                     dump_f.write(f'{json_str}\n')
                     sentence_objs = []
 
-                so = {
-                    'id': json_obj['sid'],
-                    'sentence': json_obj['sentence'],
-                    'rouge_1_recall': json_obj['rouge_1_recall'],
-                    'rouge_1_f1': json_obj['rouge_1_f1'],
-                    'rouge_2_recall': json_obj['rouge_2_recall'],
-                    'rouge_2_f1': json_obj['rouge_2_f1'],
-                }
+                so = get_sentence_obj(rouge_json_obj=json_obj)
                 sentence_objs.append(so)
                 doc_id = _doc_id
             
