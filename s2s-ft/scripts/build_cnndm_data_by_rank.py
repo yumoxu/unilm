@@ -1,10 +1,11 @@
-import io
 import os
+import io
 from os.path import dirname, abspath, join, exists
 from pathlib import Path
 from tqdm import tqdm
 import json
 import nltk
+import itertools
 
 """
     This file buids training/dev data from CNN/DM clusters for UniLM.
@@ -49,7 +50,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'train' 
+DATASET_VAR = 'val' 
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 
 if not exists(FINAL_DATA_DIR):
@@ -231,9 +232,12 @@ def load_docs():
 
 def merge(cluster_sentences):
     """
-        # TODO merge multiple sorted lists
+        Merge multiple lists.
     """
-    pass
+    cluster_sentences = list(itertools.chain(*cluster_sentences))
+    merged = _rank_sentence_objs(cluster_sentences, 
+        metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
+    return merged
 
 
 def build_clusters():
@@ -241,7 +245,10 @@ def build_clusters():
         Rank sentences per clusters, and dump them.
         
     """
+    print('Loading document rank for clusters...')
     cid2info, cids = load_cluster()
+
+    print('Loading sentence rank for documents...')
     doc_id2rank = load_docs()
 
     with open(CLUSTER_DUMP_FP, 'a') as dump_f:
@@ -249,20 +256,21 @@ def build_clusters():
             if cid % 1000 == 0:
                 print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
             
-            # TODO get sentence_objs from doc_id2rank
-            cluster_info = cid2info[cid]
+            cluster_info = cid2info[cid]  # TODO get sentence_objs from doc_id2rank
             doc_ids = cluster_info['doc_ids']
-            cluster_sentences = [doc_id2rank[doc_id] 
-                for doc_id in doc_ids]
             
+            # not all doc id exists in doc_id2rank
+            # doc_id2rank contains non-empty docs
+            # return an empty list if doc_id is not in doc_id2rank
+            cluster_sentences = [doc_id2rank.get(doc_id, []) 
+                for doc_id in doc_ids]
             ranked_sentence_objs = merge(cluster_sentences)
 
             tgt = cluster_info['summary']
             tgt_words = nltk.tokenize.word_tokenize(tgt)
             tgt_len = len(tgt_words)
             if to_save(tgt_len):
-                sentences = [so['sentence'].replace('NEWLINE_CHAR', '').strip()
-                    for so in ranked_sentence_objs]
+                sentences = [so['sentence'].strip() for so in ranked_sentence_objs]
                 src = ' '.join(sentences)
                 
                 if PREPEND_LEN:
@@ -273,7 +281,6 @@ def build_clusters():
                     "src": src,
                     "tgt": tgt,
                 }
-                # json_str = json.dumps(dump_obj, ensure_asci=False)
                 json_str = json.dumps(dump_obj)
                 dump_f.write(f'{json_str}\n')
     
@@ -283,5 +290,5 @@ def build_clusters():
 if __name__ == "__main__":
     # unit_test_get_len_token()
     # unit_test_swap_sentence_objs()
-    build_docs()
-    # build_clusters()
+    # build_docs()
+    build_clusters()
