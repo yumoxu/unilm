@@ -49,7 +49,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 
 if not exists(FINAL_DATA_DIR):
@@ -203,7 +203,7 @@ def build_docs():
                 sentence_objs.append(so)
                 doc_id = _doc_id
     
-    print(f'Sucessfully dump {DATASET_VAR} set to: {DOC_DUMP_FP}!')
+    print(f'Sucessfully dump {DATASET_VAR} set to: {DOC_DUMP_FP}')
 
 
 def load_docs():
@@ -247,7 +247,7 @@ def build_clusters():
                 json_str = json.dumps(dump_obj)
                 dump_f.write(f'{json_str}\n')
     
-    print(f'Sucessfully dump {DATASET_VAR} set to: {CLUSTER_DUMP_FP}!')
+    print(f'Sucessfully dump {DATASET_VAR} set to: {CLUSTER_DUMP_FP}')
 
 
 if __name__ == "__main__":
