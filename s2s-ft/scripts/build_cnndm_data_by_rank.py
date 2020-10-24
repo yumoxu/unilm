@@ -35,7 +35,7 @@ METRIC = 'rouge_2_f1'  # rouge_2_recall, rouge_2_f1
 SHORT_METRIC = METRIC.split('_')[-1]
 FINAL_DATA_DIR_NAME += f'-{RANK_MODE}_rank_{SHORT_METRIC}'
 
-ROUGE_C = 0.15
+ROUGE_C = 0.0
 SMOOTH_METRIC = f'rouge_1_{SHORT_METRIC}'
 if ROUGE_C > 0:
     FINAL_DATA_DIR_NAME += f'_{ROUGE_C}'
