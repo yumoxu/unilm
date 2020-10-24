@@ -88,7 +88,7 @@ class Doc:
         self.ranked_sentence_objs = ranked_sentence_objs
 
 
-def _get_cid(json_obj):
+def _get_did(json_obj):
     return int(json_obj['sid'].split('_')[0])
 
 
@@ -233,7 +233,7 @@ def build_docs():
     """
     rouge_fp = SHIFTSUM_ROOT / 'rouge' / f'{DATASET_VAR}.json'
 
-    sample_id = 0
+    doc_id = 0
     sentence_objs = []
     with open(DOC_DUMP_FP, 'a') as dump_f:
         with open(rouge_fp) as rouge_f:
@@ -242,17 +242,18 @@ def build_docs():
                 if not line:
                     continue
                 json_obj = json.loads(line)
-                _sample_id =  _get_cid(json_obj)
-                if _sample_id != sample_id:
-                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
+                _doc_id =  _get_did(json_obj)
+                if _doc_id != doc_id:
+                    ranked_sentence_objs = _rank_sentence_objs(sentence_objs, 
+                        metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
                     if SWAP_PROB > 0.0:
                         _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
 
                     if cid % 1000 == 0:
-                        print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
+                        print(f'doc id: {doc_id}, #Sentences: {len(sentence_objs)}')
                     
                     dump_obj = {
-                        "sample_id": sample_id,
+                        "doc_id": doc_id,
                         "sentences": ranked_sentence_objs,
                     }
                     json_str = json.dumps(dump_obj)
@@ -269,9 +270,9 @@ def build_docs():
                     'rouge_2_f1': json_obj['rouge_2_f1'],
                 }
                 sentence_objs.append(so)
-                sample_id = _sample_id
+                doc_id = _doc_id
     
-    print(f'Sucessfully dump {DATASET_VAR} set to: {dump_fp}!')
+    print(f'Sucessfully dump {DATASET_VAR} set to: {DOC_DUMP_FP}!')
 
 
 def load_docs():
