@@ -49,7 +49,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 
 if not exists(FINAL_DATA_DIR):
@@ -174,9 +174,6 @@ def sentence_objs2records(sentence_objs, doc_id):
         metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
     if SWAP_PROB > 0.0:
         _swap_sentence_objs(sentence_objs, metric=METRIC, swap_prob=SWAP_PROB)
-
-    if doc_id % 1000 == 0:
-        print(f'doc id: {doc_id}, #Sentences: {len(sentence_objs)}')
     
     dump_obj = {
         "doc_id": doc_id,
