@@ -64,7 +64,7 @@ def load_cluster():
     cluster_fp = SHIFTSUM_ROOT / 'clusters' / CLUSTER_FN
     cid2info = {}
     cids = []
-    with open(masked_summary_fp) as cluster_f:
+    with open(cluster_fp) as cluster_f:
         for line in cluster_f:
             json_obj = json.loads(line)
             cid = json_obj['cluster_id']
