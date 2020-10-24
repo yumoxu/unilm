@@ -253,7 +253,7 @@ def build_clusters():
             # not all doc id exists in doc_id2rank
             # doc_id2rank contains non-empty docs
             # return an empty list if doc_id is not in doc_id2rank
-            cluster_sentences = [doc_id2rank.get(doc_id, []) 
+            cluster_sentences = [doc_id2rank.get(int(doc_id), []) 
                 for doc_id in doc_ids]
             ranked_sentence_objs = merge(cluster_sentences)
 
