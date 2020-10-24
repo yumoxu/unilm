@@ -286,5 +286,5 @@ def build_clusters():
 if __name__ == "__main__":
     # unit_test_get_len_token()
     # unit_test_swap_sentence_objs()
-    # build_docs()
-    build_clusters()
+    build_docs()
+    # build_clusters()
