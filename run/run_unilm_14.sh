@@ -1,8 +1,8 @@
-export MODEL_NAME=unilm_7
+export MODEL_NAME=unilm_14
 
 export PROJ_ROOT=/disk/nfs/ostrom/s1617290/unilm
 
-export DATA_DIR=${PROJ_ROOT}/data/multinews-gold_rank_rouge_2_f1_prepend_len
+export DATA_DIR=${PROJ_ROOT}/data/cnndm-gold_rank_f1_prepend_len
 export TRAIN_FILE=${DATA_DIR}/train.json
 
 export OUTPUT_DIR=${PROJ_ROOT}/model/${MODEL_NAME}
