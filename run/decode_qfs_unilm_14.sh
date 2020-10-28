@@ -9,7 +9,7 @@ export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 # RR-with query: rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-prepend_len-prepend_raw_q
 
 # rr-39_config-26000_iter-query-ir-dial-tf-2006-top150-prepend_len
-export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-prepend_len-prepend_raw_q
+export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2006-top150-prepend_len
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_14
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
