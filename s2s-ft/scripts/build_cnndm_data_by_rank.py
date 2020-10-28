@@ -50,7 +50,7 @@ if SWAP_PROB > 0.0:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'train' 
+DATASET_VAR = 'val' 
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 
 if not exists(FINAL_DATA_DIR):
@@ -228,10 +228,21 @@ def merge(cluster_sentences):
     """
         Merge multiple lists.
     """
-    cluster_sentences = list(itertools.chain(*cluster_sentences))
+    cluster_sentences = list(itertools.chain(*cluster_sentences))  
     merged = _rank_sentence_objs(cluster_sentences, 
         metric=METRIC, rouge_c=ROUGE_C, smooth_metric=SMOOTH_METRIC)
     return merged
+
+
+def merge_iterative(cluster_sentences):
+    """
+        Encourage coverage.
+    """
+    merged = []
+    for i in range(cluster_sentences):
+        doc_sentences = cluster_sentences[i]
+        
+    pass
 
 
 def build_clusters():
@@ -281,5 +292,5 @@ def build_clusters():
 if __name__ == "__main__":
     # unit_test_get_len_token()
     # unit_test_swap_sentence_objs()
-    # build_docs()
-    build_clusters()
+    build_docs()
+    # build_clusters()
