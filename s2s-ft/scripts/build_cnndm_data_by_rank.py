@@ -372,8 +372,6 @@ def build_clusters_with_query():
     print(f'Sucessfully dump {DATASET_VAR} set to: {CLUSTER_DUMP_FP}')
 
 
-
-
 if __name__ == "__main__":
     # unit_test_get_len_token()
     # unit_test_swap_sentence_objs()
