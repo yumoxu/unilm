@@ -24,6 +24,7 @@ import itertools
 SHIFTSUM_ROOT = Path('/home/s1617290/shiftsum/data/cnndm')
 UNILM_ROOT = Path('/home/s1617290/unilm/data')
 
+
 FINAL_DATA_DIR_NAME = 'cnndm'
 TGT_MIN_WORDS = None
 if TGT_MIN_WORDS:
@@ -48,9 +49,16 @@ SWAP_PROB = 0.0
 if SWAP_PROB > 0.0:
     FINAL_DATA_DIR_NAME += '_{SWAP_PROB}_swap'
 
+PREPEND_QUERY = True
+if PREPEND_QUERY:
+    FINAL_DATA_DIR_NAME += '_prepend_q'
+
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
 DATASET_VAR = 'val' 
+
+# for training with query
+MASKED_SUMMARY_FN = f'{DATASET_VAR}-ratio-reveal_0.0.json'
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 
 if not exists(FINAL_DATA_DIR):
@@ -58,7 +66,6 @@ if not exists(FINAL_DATA_DIR):
 
 DOC_DUMP_FP = FINAL_DATA_DIR / f'{DATASET_VAR}-doc.json'
 CLUSTER_DUMP_FP = FINAL_DATA_DIR / f'{DATASET_VAR}-cluster.json'
-
 
 def load_cluster():
     cluster_fp = SHIFTSUM_ROOT / 'clusters' / CLUSTER_FN
@@ -77,6 +84,18 @@ def load_cluster():
             cids.append(cid)
 
     return cid2info, cids
+
+
+def load_queries():
+    query_fp = SHIFTSUM_ROOT / 'masked_cnndm_summary' / MASKED_SUMMARY_FN
+
+    doc_id2queries = {}
+    lines = open(query_fp).readlines()
+    for doc_id, line in enumerate(lines):
+        json_obj = json.loads(line)
+        doc_id2queries[doc_id] = json_obj['masked_seq']
+
+    return doc_id2queries
 
 
 def proc_summary(summaries):
@@ -245,6 +264,16 @@ def merge_iterative(cluster_sentences):
     pass
 
 
+def get_cluster_query(doc_ids, doc_id2query):
+    cluster_q = ''
+    for doc_id in doc_ids:
+        q = ' '.join(doc_id2query.get(int(doc_id), []))
+        if q:
+            cluster_q += q + ' '
+    
+    return cluster_q[:-1]  # remove the extra ' ' at the end
+
+
 def build_clusters():
     """
         Rank sentences per clusters, and dump them.
@@ -255,6 +284,61 @@ def build_clusters():
 
     print('Loading sentence rank for documents...')
     doc_id2rank = load_docs()
+
+    if PREPEND_QUERY:
+        print('Load queries for documents...')
+        doc_id2query = load_queries()
+
+    with open(CLUSTER_DUMP_FP, 'a') as dump_f:
+        for cid in tqdm(cids):
+            cluster_info = cid2info[cid]
+            doc_ids = cluster_info['doc_ids']
+            
+            # not all doc id exists in doc_id2rank
+            # doc_id2rank contains non-empty docs
+            # return an empty list if doc_id is not in doc_id2rank
+            cluster_sentences = [doc_id2rank.get(int(doc_id), []) 
+                for doc_id in doc_ids]
+            ranked_sentence_objs = merge(cluster_sentences)
+
+            tgt = cluster_info['summary']
+            tgt_words = nltk.tokenize.word_tokenize(tgt)
+            tgt_len = len(tgt_words)
+            if to_save(tgt_len):
+                sentences = [so['sentence'].strip() for so in ranked_sentence_objs]
+                src = ' '.join(sentences)
+                
+                if PREPEND_QUERY:
+                    query = get_cluster_query(doc_ids, doc_id2rank)
+                    src = query + ' [SEP] ' + src
+
+                if PREPEND_LEN:
+                    src = get_len_token(tgt_len) + ' ' + src
+                
+                dump_obj = {
+                    "sentences": ranked_sentence_objs,
+                    "src": src,
+                    "tgt": tgt,
+                }
+                json_str = json.dumps(dump_obj)
+                dump_f.write(f'{json_str}\n')
+    
+    print(f'Sucessfully dump {DATASET_VAR} set to: {CLUSTER_DUMP_FP}')
+
+
+def build_clusters_with_query():
+    """
+        Rank sentences per clusters, and dump them.
+        
+    """
+    print('Loading document rank for clusters...')
+    cid2info, cids = load_cluster()
+
+    print('Loading sentence rank for documents...')
+    doc_id2rank = load_docs()
+
+    print('Load queries for documents...')
+    doc_id2query = load_queries()
 
     with open(CLUSTER_DUMP_FP, 'a') as dump_f:
         for cid in tqdm(cids):
@@ -289,8 +373,10 @@ def build_clusters():
     print(f'Sucessfully dump {DATASET_VAR} set to: {CLUSTER_DUMP_FP}')
 
 
+
+
 if __name__ == "__main__":
     # unit_test_get_len_token()
     # unit_test_swap_sentence_objs()
-    build_docs()
-    # build_clusters()
+    # build_docs()
+    build_clusters()
