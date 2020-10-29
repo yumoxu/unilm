@@ -47,7 +47,7 @@ if PREPEND_LEN:
 
 SWAP_PROB = 0.0
 if SWAP_PROB > 0.0:
-    FINAL_DATA_DIR_NAME += '_{SWAP_PROB}_swap'
+    FINAL_DATA_DIR_NAME += f'_{SWAP_PROB}_swap'
 
 PREPEND_QUERY = True
 if PREPEND_QUERY:
@@ -57,8 +57,7 @@ FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
 DATASET_VAR = 'val' 
 
-# for training with query
-MASKED_SUMMARY_FN = f'{DATASET_VAR}-ratio-reveal_0.0.json'
+MASKED_SUMMARY_FN = f'{DATASET_VAR}-ratio-reveal_0.0.json'  # for training with query
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 
 if not exists(FINAL_DATA_DIR):
