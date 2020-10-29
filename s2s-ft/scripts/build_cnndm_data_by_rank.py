@@ -308,7 +308,7 @@ def build_clusters():
                 src = ' '.join(sentences)
                 
                 if PREPEND_QUERY:
-                    query = get_cluster_query(doc_ids, doc_id2rank)
+                    query = get_cluster_query(doc_ids, doc_id2query)
                     src = query + ' [SEP] ' + src
 
                 if PREPEND_LEN:
