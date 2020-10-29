@@ -55,7 +55,7 @@ if PREPEND_QUERY:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 
 MASKED_SUMMARY_FN = f'{DATASET_VAR}-ratio-reveal_0.0.json'  # for training with query
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
@@ -285,7 +285,7 @@ def build_clusters():
     doc_id2rank = load_docs()
 
     if PREPEND_QUERY:
-        print('Load queries for documents...')
+        print('Loading queries for documents...')
         doc_id2query = load_queries()
 
     with open(CLUSTER_DUMP_FP, 'a') as dump_f:
