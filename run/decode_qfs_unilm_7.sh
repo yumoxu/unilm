@@ -13,7 +13,7 @@ export MODEL_PATH=$PROJ_PATH/model/unilm_7
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
 export INPUT_JSON=${QFS_PROJ_ROOT}/unilm_in/unilm_in-${INPUT_FILE_NAME}.json
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
