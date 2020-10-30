@@ -7,7 +7,7 @@ export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 # IR: ir-tf-2006-conf0.75-prepend_len
 # Cent: centrality-hard_bias-0.85_damp-rr_records-rr-34_config-25000_iter-query-ir-dial-tf-2007-150_qa_topK-0.6_cos-10_wan-prepend_len
 # Ada: ada-4_config-1740_iter-query-ir-dial-tf-2006-top150-prepend_len
-export INPUT_FILE_NAME=ada-4_config-1740_iter-query-ir-dial-tf-2007-top150-prepend_len
+export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2006-top150-prepend_len
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_12
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
@@ -17,7 +17,8 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
-export CKPT=9000
+# best mn dev: 9000
+export CKPT=1500,3000,4500,6000,7500,9000,10500
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
