@@ -24,7 +24,6 @@ import itertools
 SHIFTSUM_ROOT = Path('/home/s1617290/shiftsum/data/cnndm')
 UNILM_ROOT = Path('/home/s1617290/unilm/data')
 
-
 FINAL_DATA_DIR_NAME = 'cnndm'
 TGT_MIN_WORDS = None
 if TGT_MIN_WORDS:

@@ -25,7 +25,7 @@ SMOOTH_METRIC = f'rouge_1_{SHORT_METRIC}'
 if ROUGE_C > 0:
     FINAL_DATA_DIR_NAME += f'_{ROUGE_C}'
 
-PREPEND_LEN = False
+PREPEND_LEN = True
 if PREPEND_LEN:
     FINAL_DATA_DIR_NAME += '_prepend_len'
 
@@ -33,27 +33,33 @@ SWAP_PROB = 0.0
 if SWAP_PROB > 0.0:
     FINAL_DATA_DIR_NAME += '_{SWAP_PROB}_swap'
 
+PREPEND_QUERY = True
+if PREPEND_QUERY:
+    FINAL_DATA_DIR_NAME += '_prepend_q'
+
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
 DATASET_VAR = 'val' 
 
+MASKED_SUMMARY_FN = f'{DATASET_VAR}-ratio-reveal_0.0.json'  # for training with query
 
 if not exists(FINAL_DATA_DIR):
     os.mkdir(FINAL_DATA_DIR)
 
 
 def get_cid2summary():
-    masked_summary_fp = SHIFTSUM_ROOT / 'masked_mn_summary' / f'{DATASET_VAR}-sample-max_reveal_1.0.json'
+    # masked_summary_fp = SHIFTSUM_ROOT / 'masked_mn_summary' / f'{DATASET_VAR}-sample-max_reveal_1.0.json'
+    masked_summary_fp = SHIFTSUM_ROOT / 'masked_mn_summary' / MASKED_SUMMARY_FN
     cid = 0
     cid2summary = {}
     with open(masked_summary_fp) as masked_summary_f:
         for line in masked_summary_f:
             json_obj = json.loads(line)
-            # cid2summary[cid] = {
-            #     'masked_seq': json_obj['masked_seq'],
-            #     'original_summary': json_obj['original_summary'],
-            # }
-            cid2summary[cid] = json_obj['original_summary']
+            cid2summary[cid] = {
+                'masked_seq': json_obj['masked_seq'],
+                'original_summary': json_obj['original_summary'],
+            }
+            # cid2summary[cid] = json_obj['original_summary']
             cid += 1
     return cid2summary
 
@@ -128,7 +134,7 @@ def unit_test_swap_sentence_objs():
                     if cid % 1000 == 0:
                         print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
                     
-                    tgt = cid2summary[cid]
+                    tgt = cid2summary[cid]['original_summary']
                     tgt_words = nltk.tokenize.word_tokenize(tgt)
                     tgt_len = len(tgt_words)
 
@@ -217,7 +223,7 @@ def build():
                     if cid % 1000 == 0:
                         print(f'cid: {cid}, #Sentences: {len(sentence_objs)}')
                     
-                    tgt = cid2summary[cid]
+                    tgt = cid2summary[cid]['original_summary']
                     tgt_words = nltk.tokenize.word_tokenize(tgt)
                     tgt_len = len(tgt_words)
 
@@ -225,6 +231,10 @@ def build():
                         sentences = [so['sentence'].replace('NEWLINE_CHAR', '').strip()
                             for so in ranked_sentence_objs]
                         src = ' '.join(sentences)
+
+                        if PREPEND_QUERY:
+                            query = ' '.join(cid2summary[cid]['masked_seq'])
+                            src = query + ' [SEP] ' + src
 
                         if PREPEND_LEN:
                             src = get_len_token(tgt_len) + ' ' + src
