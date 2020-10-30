@@ -18,7 +18,7 @@ export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
 # best mn dev: 9000
-export CKPT=1500,3000,4500,6000,7500,9000,10500
+export CKPT=1500,3000,4500,6000,7500,10500,12000
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
