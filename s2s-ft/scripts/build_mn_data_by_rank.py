@@ -39,7 +39,7 @@ if PREPEND_QUERY:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 
 MASKED_SUMMARY_FN = f'{DATASET_VAR}-ratio-reveal_0.0.json'  # for training with query
 
