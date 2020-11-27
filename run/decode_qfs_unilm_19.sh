@@ -18,7 +18,7 @@ export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 # rr-34_config-25000_iter-pred@grsum-tdqfs-0.6_cos-0_wan-nw_250@masked-ratio-reveal_1.0-ir-dial-tf-tdqfs-top150-prepend_len-prepend_masked_q
 
 # rr-34_config-25000_iter-pred@grsum-tdqfs-0.6_cos-0_wan-nw_250@masked-ratio-reveal_1.0-ir-dial-tf-tdqfs-top150-prepend_len-prepend_add_left_mask_right_dot_q
-export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-prepend_len-prepend_masked_q
+export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2006-top150-prepend_len-prepend_masked_q
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_19
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
