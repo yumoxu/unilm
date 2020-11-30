@@ -185,8 +185,7 @@ def merge(cluster_sentences):
         Merge multiple lists.
     """
     cluster_sentences = list(itertools.chain(*cluster_sentences))  
-    merged = _rank_sentence_objs(cluster_sentences)
-    return merged
+    return cluster_sentences
 
 
 def get_cluster_query(doc_ids, doc_id2query):
@@ -204,10 +203,10 @@ def build_clusters():
         Rank sentences per clusters, and dump them.
         
     """
-    print('Loading document rank for clusters...')
+    print('Loading documents for clusters...')
     cid2info, cids = load_cluster()
 
-    print('Loading sentence rank for documents...')
+    print('Loading sentences for documents...')
     doc_id2rank = load_docs()
 
     if PREPEND_QUERY:
