@@ -300,5 +300,5 @@ def build_clusters_with_query():
 
 if __name__ == "__main__":
     # unit_test_get_len_token()
-    build_docs()
-    # build_clusters()
+    # build_docs()
+    build_clusters()
