@@ -39,7 +39,7 @@ if PREPEND_QUERY:
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'train' 
+DATASET_VAR = 'val' 
 
 MASKED_SUMMARY_FN = f'{DATASET_VAR}-ratio-reveal_0.0.json'  # for training with query
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
@@ -299,5 +299,5 @@ def build_clusters_with_query():
 
 if __name__ == "__main__":
     # unit_test_get_len_token()
-    # build_docs()
+    build_docs()
     build_clusters()
