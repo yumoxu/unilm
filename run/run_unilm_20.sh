@@ -12,7 +12,8 @@ export CACHE_DIR=${PROJ_ROOT}/model/cache_unilm
 export python=${PROJ_ROOT}/bin/python
 export python_file=${PROJ_ROOT}/s2s-ft/run_seq2seq.py
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 $python -m torch.distributed.launch --nproc_per_node=8 ${python_file} \
   --train_file $TRAIN_FILE \
   --output_dir $OUTPUT_DIR \
@@ -25,7 +26,7 @@ $python -m torch.distributed.launch --nproc_per_node=8 ${python_file} \
   --max_source_seq_length 768 \
   --max_target_seq_length 400 \
   --per_gpu_train_batch_size 2 \
-  --gradient_accumulation_steps 4 \
+  --gradient_accumulation_steps 8 \
   --learning_rate 7e-5 \
   --num_warmup_steps 1000 \
   --num_training_steps 20000 \
