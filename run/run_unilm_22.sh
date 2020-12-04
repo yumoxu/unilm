@@ -1,4 +1,4 @@
-export MODEL_NAME=unilm_7
+export MODEL_NAME=unilm_22
 
 export PROJ_ROOT=/disk/nfs/ostrom/s1617290/unilm
 
@@ -27,8 +27,7 @@ $python -m torch.distributed.launch --nproc_per_node=8 ${python_file} \
   --per_gpu_train_batch_size 2 \
   --gradient_accumulation_steps 4 \
   --learning_rate 7e-5 \
-  --num_warmup_steps 1000 \
-  --num_training_steps 20000 \
+  --num_warmup_steps 500 \
+  --num_training_steps 10000 \
   --cache_dir $CACHE_DIR \
-  --save_steps 1500
-
+  --save_steps 500
