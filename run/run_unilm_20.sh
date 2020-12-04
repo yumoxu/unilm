@@ -25,7 +25,7 @@ $python -m torch.distributed.launch --nproc_per_node=4 ${python_file} \
   --max_source_seq_length 768 \
   --max_target_seq_length 400 \
   --per_gpu_train_batch_size 2 \
-  --gradient_accumulation_steps 4 \
+  --gradient_accumulation_steps 8 \
   --learning_rate 7e-5 \
   --num_warmup_steps 1000 \
   --num_training_steps 10000 \
