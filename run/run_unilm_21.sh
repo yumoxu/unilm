@@ -1,3 +1,5 @@
+### This file is for debugging purpose: why is task kllled with Siganl 9? 
+### Problem: Memory is not enough
 export MODEL_NAME=unilm_21
 
 export PROJ_ROOT=/disk/nfs/ostrom/s1617290/unilm
