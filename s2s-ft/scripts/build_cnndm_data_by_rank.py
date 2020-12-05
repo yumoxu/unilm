@@ -324,53 +324,6 @@ def build_clusters():
     print(f'Sucessfully dump {DATASET_VAR} set to: {CLUSTER_DUMP_FP}')
 
 
-def build_clusters_with_query():
-    """
-        Rank sentences per clusters, and dump them.
-        
-    """
-    print('Loading document rank for clusters...')
-    cid2info, cids = load_cluster()
-
-    print('Loading sentence rank for documents...')
-    doc_id2rank = load_docs()
-
-    print('Load queries for documents...')
-    doc_id2query = load_queries()
-
-    with open(CLUSTER_DUMP_FP, 'a') as dump_f:
-        for cid in tqdm(cids):
-            cluster_info = cid2info[cid]
-            doc_ids = cluster_info['doc_ids']
-            
-            # not all doc id exists in doc_id2rank
-            # doc_id2rank contains non-empty docs
-            # return an empty list if doc_id is not in doc_id2rank
-            cluster_sentences = [doc_id2rank.get(int(doc_id), []) 
-                for doc_id in doc_ids]
-            ranked_sentence_objs = merge(cluster_sentences)
-
-            tgt = cluster_info['summary']
-            tgt_words = nltk.tokenize.word_tokenize(tgt)
-            tgt_len = len(tgt_words)
-            if to_save(tgt_len):
-                sentences = [so['sentence'].strip() for so in ranked_sentence_objs]
-                src = ' '.join(sentences)
-                
-                if PREPEND_LEN:
-                    src = get_len_token(tgt_len) + ' ' + src
-                
-                dump_obj = {
-                    "sentences": ranked_sentence_objs,
-                    "src": src,
-                    "tgt": tgt,
-                }
-                json_str = json.dumps(dump_obj)
-                dump_f.write(f'{json_str}\n')
-    
-    print(f'Sucessfully dump {DATASET_VAR} set to: {CLUSTER_DUMP_FP}')
-
-
 if __name__ == "__main__":
     # unit_test_get_len_token()
     # unit_test_swap_sentence_objs()
