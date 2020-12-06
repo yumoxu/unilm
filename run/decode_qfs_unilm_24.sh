@@ -11,7 +11,7 @@ export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 
 # rr-39_config-26000_iter-query-ir-dial-tf-2006-top150-prepend_len
 # rr-34_config-25000_iter-pred@grsum-tdqfs-0.6_cos-0_wan-nw_250@masked-ratio-reveal_1.0-ir-dial-tf-tdqfs-top150
-export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2006-top150-prepend_masked_q
+export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-prepend_masked_q
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_24
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
@@ -23,7 +23,7 @@ export MKL_NUM_THREADS=2
 
 # 500,1000,1500,2000,2500,3000,3500,4000,4500,5000
 # 5500,6000,6500,7000,7500,8000,8500,9000,9500,10000
-export CKPT=500,1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,10000
+export CKPT=2000,3000,5000,5500
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
