@@ -3,7 +3,7 @@ export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 # marge-13_config-37500_iter-narr-ir-dial-tf-2005-top90-global_pos
 # rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-local_pos
 # rr-34_config-25000_iter-pred@grsum-tdqfs-0.6_cos-0_wan-nw_250@masked-ratio-reveal_1.0-ir-dial-tf-tdqfs-top150-local_pos
-export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2006-top150-local_pos
+export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-local_pos
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_20
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
@@ -13,7 +13,7 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
-export CKPT=1500,3000,4500,6000,7500,9000,10500,12000,13500,15000,16500,18000,19500,21000,22500,24000,25500,27000,28500,30000,31500,33000,34500,36000,37500,39000
+export CKPT=7500
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
