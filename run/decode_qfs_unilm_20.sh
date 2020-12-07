@@ -3,7 +3,7 @@ export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 # marge-13_config-37500_iter-narr-ir-dial-tf-2005-top90-global_pos
 # rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-local_pos
 # rr-34_config-25000_iter-pred@grsum-tdqfs-0.6_cos-0_wan-nw_250@masked-ratio-reveal_1.0-ir-dial-tf-tdqfs-top150-local_pos
-export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-local_pos
+export INPUT_FILE_NAME=rr-34_config-25000_iter-pred@grsum-tdqfs-0.6_cos-0_wan-nw_250@masked-ratio-reveal_1.0-ir-dial-tf-tdqfs-top150-local_pos
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_20
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
