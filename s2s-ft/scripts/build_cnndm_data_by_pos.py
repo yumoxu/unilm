@@ -24,22 +24,22 @@ import itertools
 SHIFTSUM_ROOT = Path('/home/s1617290/shiftsum/data/cnndm')
 UNILM_ROOT = Path('/home/s1617290/unilm/data')
 
-FINAL_DATA_DIR_NAME = 'cnndm'
+FINAL_DATA_DIR_NAME = 'multicnndm'
 TGT_MIN_WORDS = None
 if TGT_MIN_WORDS:
     FINAL_DATA_DIR_NAME += f'-{TGT_MIN_WORDS}'
 
-PREPEND_LEN = False
+PREPEND_LEN = True
 if PREPEND_LEN:
     FINAL_DATA_DIR_NAME += '_prepend_len'
 
-PREPEND_QUERY = False
+PREPEND_QUERY = True
 if PREPEND_QUERY:
     FINAL_DATA_DIR_NAME += '_prepend_q'
 
 FINAL_DATA_DIR = UNILM_ROOT / FINAL_DATA_DIR_NAME
 
-DATASET_VAR = 'val' 
+DATASET_VAR = 'train' 
 
 MASKED_SUMMARY_FN = f'{DATASET_VAR}-ratio-reveal_0.0.json'  # for training with query
 CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
@@ -47,7 +47,8 @@ CLUSTER_FN = f'cluster-{DATASET_VAR}-cos_0.6.json'
 if not exists(FINAL_DATA_DIR):
     os.mkdir(FINAL_DATA_DIR)
 
-DOC_DUMP_FP = FINAL_DATA_DIR / f'{DATASET_VAR}-doc.json'
+# DOC_DUMP_FP = FINAL_DATA_DIR / f'{DATASET_VAR}-doc.json'
+DOC_DUMP_FP = UNILM_ROOT / 'multicnndm' / 'doc' / f'{DATASET_VAR}-doc.json'
 CLUSTER_DUMP_FP = FINAL_DATA_DIR / f'{DATASET_VAR}-cluster.json'
 
 
@@ -299,5 +300,5 @@ def build_clusters_with_query():
 
 if __name__ == "__main__":
     # unit_test_get_len_token()
-    build_docs()
+    # build_docs()
     build_clusters()

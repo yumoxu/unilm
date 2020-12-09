@@ -31,4 +31,3 @@ $python -m torch.distributed.launch --nproc_per_node=8 ${python_file} \
   --num_training_steps 20000 \
   --cache_dir $CACHE_DIR \
   --save_steps 1500
-
