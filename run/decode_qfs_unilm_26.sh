@@ -3,7 +3,7 @@ export PROJ_PATH=/disk/nfs/ostrom/s1617290/unilm
 # rr-34_config-25000_iter-query-ir-dial-tf-2006-top150-local_pos-prepend_len-prepend_masked_q
 # rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-local_pos-prepend_len-prepend_masked_q
 # rr-34_config-25000_iter-pred@grsum-tdqfs-0.6_cos-0_wan-nw_250@masked-ratio-reveal_1.0-ir-dial-tf-tdqfs-top150-local_pos-prepend_len-prepend_add_left_mask_right_dot_q
-export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2006-top150-local_pos-prepend_len-prepend_masked_q
+export INPUT_FILE_NAME=rr-34_config-25000_iter-query-ir-dial-tf-2007-top150-local_pos-prepend_len-prepend_masked_q
 export SPLIT=${INPUT_FILE_NAME}
 export MODEL_PATH=$PROJ_PATH/model/unilm_26
 export QFS_PROJ_ROOT=/disk/nfs/ostrom/s1617290/shiftsum
@@ -15,7 +15,7 @@ export MKL_NUM_THREADS=2
 
 # 1500,3000,4500,6000,7500,9000,10500
 # 12000,13500,15000,16500,18000,19500,20000
-export CKPT=10500,12000,13500,15000,16500,18000,19500,20000
+export CKPT=3000
 export python=$PROJ_PATH/bin/python
 export python_file=$PROJ_PATH/s2s-ft/decode_seq2seq.py
 
